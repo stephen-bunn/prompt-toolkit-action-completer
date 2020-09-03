@@ -2,3 +2,4 @@ sphinx>=3.0
 toml
 sphinx-rtd-theme
 sphinx-autodoc-typehints
+typing-extensions
