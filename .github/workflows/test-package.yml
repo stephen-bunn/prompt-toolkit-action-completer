@@ -24,7 +24,7 @@ jobs:
           poetry run pytest -p no:warnings
       - name: Build Coverage Report
         run: |
-          coverage xml -o cobertura.xml
+          poetry run coverage xml -o cobertura.xml
       - name: Publish Coverage CodeCov
         uses: codecov/codecov-action@v1
         with:
