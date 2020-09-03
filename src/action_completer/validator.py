@@ -215,12 +215,18 @@ class ActionValidator(Validator):
         """
 
         assert isinstance(action_param.source, (list, tuple,)), (
-            "iterable param validation can only handle hashable iterables of strings, "
+            "iterable param validation can only handle hashable iterables, "
             f"{action_param.source!r}"
         )
 
+        validation_choices = [choice for choice in action_param.source]
+        assert all(isinstance(value, str) for value in validation_choices), (
+            "iterable param validation can only handle hashable iterables of strings, "
+            f"{validation_choices!r}"
+        )
+
         self._validate_choices(
-            action_param.source, value, cursor_position=cursor_position
+            validation_choices, value, cursor_position=cursor_position
         )
 
     def _validate_callable_param(
@@ -250,7 +256,7 @@ class ActionValidator(Validator):
         )
 
         self._validate_choices(
-            [choice for choice in action_param.source(action)],
+            list(action_param.source(action)),  # type: ignore
             value,
             cursor_position=cursor_position,
         )

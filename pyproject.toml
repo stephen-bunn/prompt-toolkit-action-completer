@@ -60,7 +60,7 @@ attrs = "^20.1.0"
 fuzzywuzzy = {extras = ["speedup"], version = "^0.18.0"}
 
 [tool.poetry.dev-dependencies]
-black = "^19.10b0"
+black = "^20.8b1"
 check-manifest = "^0.42"
 colorama = "^0.4.3"
 coverage = { version = "^5.2.1", extras = ["toml"] }
@@ -91,65 +91,65 @@ sphinx-autodoc-typehints = "^1.11.0"
 profile = ["pyprof2calltree", "vprof"]
 
 [tool.black]
-  line-length = 88
-  target_version = ['py37']
-  include = '\.pyi?$'
-  exclude = '''
-  (
-    /(
-      \.eggs
-      | \.git
-      | \.mypy_cache
-      | _build
-      | build
-      | dist
-    )/
-  )
-  '''
+line-length = 88
+target_version = ['py37']
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+    \.eggs
+    | \.git
+    | \.mypy_cache
+    | _build
+    | build
+    | dist
+  )/
+)
+'''
 
 [tool.towncrier]
-  package = "action_completer"
-  package_dir = "src"
-  filename = "CHANGELOG.rst"
-  directory = "changes/"
-  title_format = "`{version} <https://github.com/stephen-bunn/prompt-toolkit-action-completer/releases/tag/v{version}>`_ (*{project_date}*)"
-  issue_format = '`#{issue} <https://github.com/stephen-bunn/prompt-toolkit-action-completer/issues/{issue}>`_'
-  template = 'tasks/CHANGELOG.rst.jinja2'
+package = "action_completer"
+package_dir = "src"
+filename = "CHANGELOG.rst"
+directory = "changes/"
+title_format = "`{version} <https://github.com/stephen-bunn/prompt-toolkit-action-completer/releases/tag/v{version}>`_ (*{project_date}*)"
+issue_format = '`#{issue} <https://github.com/stephen-bunn/prompt-toolkit-action-completer/issues/{issue}>`_'
+template = 'tasks/CHANGELOG.rst.jinja2'
 
-  [[tool.towncrier.type]]
-  directory = 'feature'
-  name = 'Features'
-  showcontent = true
+[[tool.towncrier.type]]
+directory = 'feature'
+name = 'Features'
+showcontent = true
 
-  [[tool.towncrier.type]]
-  directory = 'bugfix'
-  name = 'Bug Fixes'
-  showcontent = true
+[[tool.towncrier.type]]
+directory = 'bugfix'
+name = 'Bug Fixes'
+showcontent = true
 
-  [[tool.towncrier.type]]
-  directory = 'doc'
-  name = 'Documentation'
-  showcontent = true
+[[tool.towncrier.type]]
+directory = 'doc'
+name = 'Documentation'
+showcontent = true
 
-  [[tool.towncrier.type]]
-  directory = 'trivial'
-  name = 'Trivial Changes'
-  showcontent = false
+[[tool.towncrier.type]]
+directory = 'trivial'
+name = 'Trivial Changes'
+showcontent = false
 
-  [[tool.towncrier.type]]
-  directory = 'misc'
-  name = 'Miscellaneous'
-  showcontent = true
+[[tool.towncrier.type]]
+directory = 'misc'
+name = 'Miscellaneous'
+showcontent = true
 
-  [[tool.towncrier.type]]
-  directory = 'removal'
-  name = 'Removals'
-  showcontent = true
+[[tool.towncrier.type]]
+directory = 'removal'
+name = 'Removals'
+showcontent = true
 
-  [[tool.towncrier.type]]
-  directory = 'deprecation'
-  name = 'Deprecations'
-  showcontent = true
+[[tool.towncrier.type]]
+directory = 'deprecation'
+name = 'Deprecations'
+showcontent = true
 
 
 [tool.pytest.ini_options]
