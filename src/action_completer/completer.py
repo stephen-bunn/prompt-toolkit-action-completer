@@ -565,7 +565,9 @@ class ActionCompleter(Completer):
             f"iterables of strings, {action_param.source!r}"
         )
 
-        completion_choices: Iterable[str] = action_param.source(action)  # type: ignore
+        completion_choices: Iterable[str] = action_param.source(  # type: ignore
+            action, action_param, param_value
+        )
         for completion_text in iter_best_choices(
             completion_choices,
             param_value,

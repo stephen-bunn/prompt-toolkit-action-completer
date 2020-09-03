@@ -467,7 +467,7 @@ class ActionValidator(Validator):
         if compare_operator(len(non_empty_fragments), len(action.params)):
             raise ValidationError(
                 message=(
-                    f"Missing parameters for {parent_name!r}, "
+                    f"Invalid number of parameters for {parent_name!r}, "
                     f"expected {len(action.params)} recieved {len(non_empty_fragments)}"
                 ),
                 cursor_position=cursor_position,

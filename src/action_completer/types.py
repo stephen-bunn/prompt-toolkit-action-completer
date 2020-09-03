@@ -73,7 +73,7 @@ ActionContext_T = Tuple[
     Optional["ActionGroup"], Optional[str], Union["ActionGroup", "Action"], List[str]
 ]
 ActionParamBasic_T = str
-ActionParamCallable_T = Callable[..., Iterable[str]]
+ActionParamCallable_T = Callable[["Action", "ActionParam", str], Iterable[str]]
 ActionParamCompleter_T = Type[Completer]
 ActionParamIterable_T = Union[List[str], Tuple[str]]
 ActionParamSource_T = Union[
