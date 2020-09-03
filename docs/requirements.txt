@@ -1,1 +1,3 @@
 toml
+sphinx-rtd-theme
+sphinx-autodoc-typehints
