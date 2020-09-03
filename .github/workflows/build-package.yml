@@ -1,0 +1,32 @@
+name: Publish Package
+on:
+  release:
+    types:
+      - created
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v1
+      - name: Use Python 3.x
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.x"
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip twine setuptools wheel poetry
+      - name: Create Build Environment
+        run: |
+          poetry install
+      - name: Build Package
+        run: |
+          poetry run invoke -e clean
+          poetry run invoke -e docs.build-news -y
+          poetry run invoke -e build
+      - name: Publish Package
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          python -m twine upload dist/*
