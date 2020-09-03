@@ -5,7 +5,7 @@ build-backend = "poetry.masonry.api"
 [tool.poetry]
 name = "prompt-toolkit-action-completer"
 version = "0.1.0"
-description = "A fairly simple method for adding prompt-toolkit completions attached to callables"
+description = "A fairly simple method for registering callables as prompt-toolkit completions"
 authors = ["Stephen Bunn <stephen@bunn.io>"]
 maintainers = []
 license = "ISC"
@@ -55,6 +55,9 @@ exclude = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
+prompt-toolkit = "^3.0.7"
+attrs = "^20.1.0"
+fuzzywuzzy = {extras = ["speedup"], version = "^0.18.0"}
 
 [tool.poetry.dev-dependencies]
 black = "^19.10b0"
@@ -81,6 +84,8 @@ toml = "^0.10.1"
 towncrier = "^19.2.0"
 twine = "^3.2.0"
 vprof = { version = "^0.38", optional = true }
+sphinx-rtd-theme = "^0.5.0"
+sphinx-autodoc-typehints = "^1.11.0"
 
 [tool.poetry.extras]
 profile = ["pyprof2calltree", "vprof"]

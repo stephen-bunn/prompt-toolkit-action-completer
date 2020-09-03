@@ -7,7 +7,7 @@
    </p>
 
 
-A fairly simple method for adding prompt-toolkit completions attached to callables
+A fairly simple method for registering callables as prompt-toolkit completions.
 
 
 **To get started using this package, please see the** :ref:`getting-started` **page!**

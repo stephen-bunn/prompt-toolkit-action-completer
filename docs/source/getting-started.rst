@@ -5,7 +5,8 @@ Getting Started
 ===============
 
 | **Welcome to Action Completer!**
-| This page should hopefully provide you with enough information to get you started defining, serializing, and validating config instances.
+| This page should hopefully provide you with enough information to get you started
+| with defining actions, groups, and parameters for use with prompt-toolkit.
 
 Installation and Setup
 ======================
@@ -24,4 +25,5 @@ Or you can build and install the package from the git repo.
 
    $ git clone https://github.com/stephen-bunn/prompt-toolkit-action-completer.git
    $ cd ./prompt-toolkit-action-completer
-   $ python setup.py install
+   $ poetry build
+   $ pip install ./dist/*.whl

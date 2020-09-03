@@ -16,6 +16,7 @@
 import pathlib
 import sys
 
+import sphinx_rtd_theme
 import toml
 
 BASE_DIR = pathlib.Path(__file__).resolve().parent.parent.parent
@@ -55,7 +56,14 @@ release = metadata["version"]
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.intersphinx", "sphinx.ext.viewcode"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
+    "sphinx_rtd_theme",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -90,21 +98,21 @@ pygments_style = None
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "alabaster"
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
 html_theme_options = {
-    "description": metadata["description"],
-    "github_user": "stephen-bunn",
-    "github_repo": "prompt-toolkit-action-completer",
-    "github_type": "star",
-    "page_width": "1000px",
-    "sidebar_width": "220px",
-    "sidebar_collapse": True,
-    "fixed_sidebar": True,
+    "display_version": True,
+    "prev_next_buttons_location": "bottom",
+    "style_nav_header_background": "#1BB491",
+    "collapse_navigation": True,
+    "sticky_navigation": True,
+    "navigation_depth": 3,
+    "includehidden": True,
+    "titles_only": False,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -208,4 +216,7 @@ epub_exclude_files = ["search.html"]
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {"python": ("https://docs.python.org/3.7/", None)}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3.7/", None),
+    "prompt_toolkit": ("https://python-prompt-toolkit.readthedocs.io/en/master", None),
+}
