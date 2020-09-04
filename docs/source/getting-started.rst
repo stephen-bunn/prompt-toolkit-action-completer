@@ -47,22 +47,15 @@ keyword argument.
    prompt(">>> ", completer=completer)
 
 
+Defining Actions
+----------------
+
 This of course isn't very useful right now since we haven't registered any actions to
 the completer. We can easily add a simple ``hello`` action by decorating a callable
 **before** we make the call to :func:`~prompt_toolkit.shortcuts.prompt`:
 
-.. code-block:: python
-
-   from prompt_toolkit.shortcuts import prompt
-   from action_completer import ActionCompleter
-   completer = ActionCompleter()
-
-   @completer.action("hello")
-   def _hello_action():
-      print("Hello, World!")
-
-   prompt(">>> ", completer=completer)
-
+.. literalinclude:: _static/assets/examples/000-simple-hello-completion.py
+   :emphasize-lines: 8-10
 
 With this little bit of logic we will automatically get ``hello`` completions from our
 prompt call.
@@ -78,10 +71,8 @@ We do this by using a new method on the completer,
 produced by the prompt and it will do it's best to execute the desired callable and
 return whatever value the registered action returns:
 
-.. code-block:: python
-
-   prompt_result = prompt(">>> ", completer=completer)
-   completer.run_action(prompt_result)
+.. literalinclude:: _static/assets/examples/001-simple-hello-completion.py
+   :emphasize-lines: 13-14
 
 .. image:: _static/assets/recordings/001-simple-hello-completion.gif
 
@@ -100,10 +91,8 @@ This helper method will give you a new instance of :class:`~.validator.ActionVal
 that will be able to check that the current prompt can be adequately handled by the
 registered action.
 
-.. code-block:: python
-
-   prompt_result = prompt(">>> ", completer=completer, validator=completer.get_validator())
-   completer.run_action(prompt_result)
+.. literalinclude:: _static/assets/examples/002-simple-hello-completion.py
+   :emphasize-lines: 13
 
 .. image:: _static/assets/recordings/002-simple-hello-completion.gif
 
@@ -225,6 +214,8 @@ that the completer determines should be yielded will be yielded.
          print(file_handle.read())
 
 
+.. _completion-source-callable:
+
 Callable (``Callable[[Action, ActionParam, str], Iterable[str]]``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -270,7 +261,7 @@ custom data types in the action itself. So give the ``cast`` keyword argument to
 Note, that we don't do anything clever when casting this value.
 If you request us to cast the parameter to an :class:`int` and the string contains alpha
 characters, it will fail with the traditional :class:`ValueError`.
-To avoid this sittuation, continue reading on through doing parameter validation.
+To avoid this sittuation, continue reading on through to handling parameter validation.
 
 
 Parameter Validation
@@ -282,34 +273,30 @@ Simply pass a :class:`~prompt_toolkit.validation.Validator` instance as a value 
 ``validators`` keyword argument, and you can ensure that the completed path is an
 existing file.
 
-.. code-block:: python
-
-   from pathlib import Path
-   from prompt_toolkit.completion import PathCompleter
-   from prompt_toolkit.validation import Validator
-
-   @completer.action("cat")
-   @completer.param(
-      PathCompleter(),
-      cast=Path,
-      validators=[
-         Validator.from_callable(
-            lambda p: Path(p).is_file(),
-            error_message="Path is not an existing file"
-         )
-      ]
-   )
-   def _cat_action(filepath: Path):
-      with filepath.open("r") as file_handle:
-         print(file_handle.read())
-
-
-   prompt_result = prompt(">>> ", completer=completer, validator=completer.get_validator())
-   completer.run_action(prompt_result)
-
+.. literalinclude:: _static/assets/examples/004-cat-path-validation.py
+   :emphasize-lines: 16-20
 
 .. image:: _static/assets/recordings/004-cat-path-validation.gif
 
+
+Because your parameter validation *may* require that you also take into consideration
+the context of the parameter, you can also pass a custom validator callable.
+Similar to the custom callable parameter completion sources available in
+:ref:`completion-source-callable`, you can also pass a callable with a specific
+signature to the ``validators`` list.
+As inputs, this callable will take the following positional arguments:
+
+- ``ActionParam`` (:class:`~.types.ActionParam`) - The associated action parameter that needs to be validated
+- ``str`` (:class:`str`) - The current value of the action parameter
+- ``List[str]`` (List[:class:`str`]) - The previously extracted prompt buffer fragments
+
+This callable should raise a :class:`~prompt_toolkit.validation.ValidationError` when
+validation fails.
+For example, let's create an action that creates a new ``.txt`` file in a specified
+directory and verifies that the file can safely be created:
+
+.. literalinclude:: _static/assets/examples/005-advanced-touch-validation.py
+   :emphasize-lines: 13-20,33
 
 Nested Groups
 -------------

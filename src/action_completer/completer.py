@@ -589,6 +589,12 @@ class ActionCompleter(Completer):
     ) -> Generator[Completion, None, None]:
         """Iterate None action parameter completions.
 
+        .. important::
+            None completions are not shown **unless** either a ``display`` or
+            ``display_meta`` value is given. Without one of these value's being
+            there is no point in rendering a completion as we can't predict what that
+            completion might be.
+
         Args:
             action (Action): The action the parameter is tied to
             action_param (ActionParam): The action parameter to generate completions for
@@ -607,11 +613,12 @@ class ActionCompleter(Completer):
             f"{action_param.source!r}"
         )
 
-        yield self._build_completion(
-            completable=action_param,
-            text=decode_completion(param_value),
-            start_position=start_position,
-        )
+        if action_param.display or action_param.display_meta:
+            yield self._build_completion(
+                completable=action_param,
+                text=decode_completion(param_value),
+                start_position=start_position,
+            )
 
     def _iter_action_completions(
         self,

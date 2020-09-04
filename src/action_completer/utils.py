@@ -81,17 +81,17 @@ def extract_context(action_group: ActionGroup, fragments: List[str]) -> ActionCo
 
     current_parent: Optional[ActionGroup] = None
     current_name: Optional[str] = None
-    current_group: Union[ActionGroup, Action] = action_group
+    current_completable: Union[ActionGroup, Action] = action_group
     depth = 0
 
     for fragment in fragments:
-        if isinstance(current_group, Action):
+        if isinstance(current_completable, Action):
             break
 
-        for name, source in current_group.children.items():
+        for name, source in current_completable.children.items():
             if fragment == name:
                 depth += 1
-                current_parent = current_group
+                current_parent = current_completable
                 current_name = name
 
                 if isinstance(source, Action):
@@ -112,9 +112,9 @@ def extract_context(action_group: ActionGroup, fragments: List[str]) -> ActionCo
                         fragments[active_fragment_depth:],
                     )
                 elif isinstance(source, ActionGroup):
-                    current_group = source
+                    current_completable = source
 
-    return current_parent, current_name, current_group, fragments[depth:]
+    return current_parent, current_name, current_completable, fragments[depth:]
 
 
 def get_dynamic_value(
