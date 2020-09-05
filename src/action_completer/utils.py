@@ -53,7 +53,7 @@ def decode_completion(text: str) -> str:
 
 
 def get_fragments(text: str) -> List[str]:
-    """Get the propelry split fragments from the current user's prompt buffer.
+    """Get the properly split fragments from the current user's prompt buffer.
 
     Args:
         text (str): The text of the current user's prompt buffer
@@ -70,7 +70,7 @@ def extract_context(action_group: ActionGroup, fragments: List[str]) -> ActionCo
 
     Args:
         action_group (ActionGroup): The root action group to start context extraction
-        fragments (List[str]): The text framgments extracted from the current user's
+        fragments (List[str]): The text fragments extracted from the current user's
             prompt buffer
 
     Returns:

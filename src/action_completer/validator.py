@@ -23,7 +23,7 @@ For example:
         # note the call to `get_validator` for every call to prompt
         prompt_result = prompt(
             ">>> ",
-            completer=commpleter,
+            completer=completer,
             validator=completer.get_validator()
         )
 
@@ -508,7 +508,7 @@ class ActionValidator(Validator):
             raise ValidationError(
                 message=(
                     f"Invalid number of parameters for {parent_name!r}, "
-                    f"expected {len(action.params)} recieved {len(non_empty_fragments)}"
+                    f"expected {len(action.params)} received {len(non_empty_fragments)}"
                 ),
                 cursor_position=cursor_position,
             )
