@@ -168,7 +168,7 @@ class ActionValidator(Validator):
         self,
         action: Action,
         action_param: ActionParam,
-        value: str,
+        param_value: str,
         cursor_position: int = 0,
     ):
         """Validate a given basic (string) parameter for the parameter value.
@@ -176,7 +176,7 @@ class ActionValidator(Validator):
         Args:
             action (Action): The action the given action parameter applies to
             action_param (ActionParam): The action parameter to base validation off of
-            value (str): The value to validate against the given action parameter
+            param_value (str): The value to validate against the given action parameter
             cursor_position (int, optional): The current cursor position in the prompt
                 buffer. Defaults to 0.
 
@@ -190,14 +190,14 @@ class ActionValidator(Validator):
         ), f"basic param validation can only handle a string source, {action_param!r}"
 
         self._validate_choices(
-            [action_param.source], value, cursor_position=cursor_position
+            [action_param.source], param_value, cursor_position=cursor_position
         )
 
     def _validate_iterable_param(
         self,
         action: Action,
         action_param: ActionParam,
-        value: str,
+        param_value: str,
         cursor_position: int = 0,
     ):
         """Validate a given iterable (Iterable[str]) parameter for the parameter value.
@@ -205,7 +205,7 @@ class ActionValidator(Validator):
         Args:
             action (Action): The action the given action parameter applies to
             action_param (ActionParam): The action parameter to base validation off of
-            value (str): The value to validate against the given action parameter
+            param_value (str): The value to validate against the given action parameter
             cursor_position (int, optional): The current cursor position in the prompt
                 buffer. Defaults to 0.
 
@@ -220,20 +220,20 @@ class ActionValidator(Validator):
         )
 
         validation_choices = [choice for choice in action_param.source]
-        assert all(isinstance(value, str) for value in validation_choices), (
+        assert all(isinstance(param_value, str) for value in validation_choices), (
             "iterable param validation can only handle hashable iterables of strings, "
             f"{validation_choices!r}"
         )
 
         self._validate_choices(
-            validation_choices, value, cursor_position=cursor_position
+            validation_choices, param_value, cursor_position=cursor_position
         )
 
     def _validate_callable_param(
         self,
         action: Action,
         action_param: ActionParam,
-        value: str,
+        param_value: str,
         cursor_position: int = 0,
     ):
         """Validate a given callable parameter for the parameter value.
@@ -241,7 +241,7 @@ class ActionValidator(Validator):
         Args:
             action (Action): The action the given parameter applies to
             action_param (ActionParam): The action parameter to base validation off of
-            value (str): The value to validate against the given action parameter
+            param_value (str): The value to validate against the given action parameter
             cursor_position (int, optional): The current cursor position in the prompt
                 buffer. Defaults to 0.
 
@@ -257,7 +257,7 @@ class ActionValidator(Validator):
 
         self._validate_choices(
             list(action_param.source(action)),  # type: ignore
-            value,
+            param_value,
             cursor_position=cursor_position,
         )
 
@@ -265,7 +265,7 @@ class ActionValidator(Validator):
         self,
         action: Action,
         action_param: ActionParam,
-        value: str,
+        param_value: str,
         previous_fragments: List[str],
         cursor_position: int = 0,
     ):
@@ -314,7 +314,7 @@ class ActionValidator(Validator):
         Args:
             action (Action): The action the given parameter applies to
             action_param (ActionParam): The action parameter to base validation off of
-            value (str): The value to validate agains the given action parameter
+            param_value (str): The value to validate agains the given action parameter
             previous_fragments (List[str]): The list of fragments that have appeared
                 before the current given ``value`` fragment
             cursor_position (int, optional): The current cursor position in the prompt
@@ -339,8 +339,8 @@ class ActionValidator(Validator):
                 try:
                     custom_validator.validate(
                         Document(
-                            text=decode_completion(value),
-                            cursor_position=len(value),
+                            text=decode_completion(param_value),
+                            cursor_position=len(param_value),
                         )
                     )
                 except ValidationError as exc:
@@ -368,7 +368,7 @@ class ActionValidator(Validator):
                 try:
                     custom_validator(
                         action_param,
-                        value,
+                        param_value,
                         previous_fragments,
                     )
                 except ValidationError as exc:
@@ -381,6 +381,50 @@ class ActionValidator(Validator):
                     "no validation will be performed",
                     UserWarning,
                 )
+
+    def _validate_default_validators(
+        self,
+        action: Action,
+        action_param: ActionParam,
+        param_value: str,
+        cursor_position: int = 0,
+    ):
+        """Validate default validators for the current parameter value.
+
+        Args:
+            action (Action): The action the given parameter applies to
+            action_param (ActionParam): The action parameter to base validation off of
+            param_value (str): The value to validate agains the given action parameter
+            cursor_position (int, optional): The current cursor position in the prompt
+                buffer. Defaults to 0.
+
+        Raises:
+            ValidationError: When any of the provided parameter validator callables
+                raises :class:`~prompt_toolkit.validation.ValidationError`
+        """
+
+        param_validator = None
+
+        if isinstance(action_param.source, str):
+            param_validator = self._validate_basic_param
+        elif isinstance(
+            action_param.source,
+            (
+                list,
+                tuple,
+            ),
+        ):
+            param_validator = self._validate_iterable_param
+        elif callable(action_param.source):
+            param_validator = self._validate_callable_param
+
+        if param_validator:
+            param_validator(
+                action,
+                action_param,
+                decode_completion(param_value),
+                cursor_position=cursor_position,
+            )
 
     def _validate_action(
         self,
@@ -423,44 +467,33 @@ class ActionValidator(Validator):
         if action.params is None:
             return
 
-        param_offset = len(fragments) - 1
         for param_index, (action_param, param_value) in enumerate(
-            zip(action.params[param_offset:], fragments[param_offset:])
+            zip(action.params, fragments)
         ):
-            if action_param.validators and len(action_param.validators) > 0:
-                self._validate_custom_validators(
-                    action,
-                    action_param,
-                    decode_completion(param_value),
-                    fragments[param_offset - 1 : param_offset + param_index],
-                    cursor_position=cursor_position,
-                )
-            else:
-                param_validator = None
-
-                # NOTE: we don't assume any type of validation for parameters using
-                # their own completers, it is up to the user to define a custom
-                # validator for the ActionParam in this case
-                if isinstance(action_param.source, str):
-                    param_validator = self._validate_basic_param
-                elif isinstance(
-                    action_param.source,
-                    (
-                        list,
-                        tuple,
-                    ),
-                ):
-                    param_validator = self._validate_iterable_param
-                elif callable(action_param.source):
-                    param_validator = self._validate_callable_param
-
-                if param_validator:
-                    param_validator(
+            try:
+                if action_param.validators and len(action_param.validators) > 0:
+                    self._validate_custom_validators(
                         action,
                         action_param,
                         decode_completion(param_value),
+                        fragments[: (len(fragments) - 1) + (param_index - 1)],
                         cursor_position=cursor_position,
                     )
+                else:
+                    # NOTE: we don't assume any type of validation for parameters using
+                    # their own completers, it is up to the user to define a custom
+                    # validator for the ActionParam in this case
+                    self._validate_default_validators(
+                        action,
+                        action_param,
+                        param_value,
+                        cursor_position=cursor_position,
+                    )
+            except ValidationError as exc:
+                raise ValidationError(
+                    cursor_position=cursor_position,
+                    message=f"[arg: {param_index + 1!s}] {exc.message!s}",
+                )
 
         non_empty_fragments = list(filter(None, fragments))
         compare_operator = operator.lt if action.capture_all else operator.ne
