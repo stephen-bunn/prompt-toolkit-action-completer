@@ -34,7 +34,7 @@ Usage
 
 This package supplies both a :class:`~.completer.ActionCompleter` and a
 :class:`~.validator.ActionValidator` for direct use with prompt-toolkit.
-You sould be passing instances of the :class:`~.completer.ActionCompleter`
+You should be passing instances of the :class:`~.completer.ActionCompleter`
 directly to the call to :func:`~prompt_toolkit.shortcuts.prompt` as the ``completer``
 keyword argument.
 
@@ -142,8 +142,8 @@ features of an action parameter, but doesn't attempt to do any real completion.
 .. warning::
    A fairly big caveat of parameter completion for ``None`` source inputs, is that we
    don't support values containing spaces as properly handled inputs by the user.
-   Values containing spaces are very difficult to distinguish from upcomming parameters.
-   We do support the ability for users to esacape spaces to include them in their
+   Values containing spaces are very difficult to distinguish from upcoming parameters.
+   We do support the ability for users to escape spaces to include them in their
    parameter input.
 
    .. code-block:: bash
@@ -161,7 +161,7 @@ Basic (``str``)
 
 A basic string can be provided as a completion source that will force the value of the
 parameter to always be whatever the value of this string is.
-Might not seem very useful, but I've run into several sittuations when building dynamic
+Might not seem very useful, but I've run into several situations when building dynamic
 actions that this can help out with.
 
 .. code-block:: python
@@ -261,7 +261,7 @@ custom data types in the action itself. So give the ``cast`` keyword argument to
 Note, that we don't do anything clever when casting this value.
 If you request us to cast the parameter to an :class:`int` and the string contains alpha
 characters, it will fail with the traditional :class:`ValueError`.
-To avoid this sittuation, continue reading on through to handling parameter validation.
+To avoid this situation, continue reading on through to handling parameter validation.
 
 
 Parameter Validation
@@ -296,23 +296,191 @@ For example, let's create an action that creates a new ``.txt`` file in a specif
 directory and verifies that the file can safely be created:
 
 .. literalinclude:: _static/assets/examples/005-advanced-touch-validation.py
-   :emphasize-lines: 13-20,33
+   :emphasize-lines: 13-17,30
+
+
+By default, the :class:`~.validator.ActionValidator` will validate that you are
+providing the **exact** amount of parameters for an action.
+If you need to allow for the user to enter additional text into the prompt past the
+defined parameters, you can set the ``capture_all`` flag on the action to ``True``.
+This will disable the check for an exact number of parameters and will instead ensure
+that the user gives at least the number of defined parameters.
+
+.. literalinclude:: _static/assets/examples/006-capture-all-action.py
+   :emphasize-lines: 8,10,12
+
 
 Nested Groups
 -------------
+
+Likely you will run into the situation where you want to create a subgroup of actions
+under a specific completable name.
+You can do this fairly easily by making use of the :meth:`~.types.ActionGroup.group`
+method which will allow you to define a subgroup on an existing group.
+
+Any related actions (or even additional nested subgroups) should be created by using the
+:meth:`~.types.ActionGroup.action` or :meth:`~.types.ActionGroup.group` methods from the
+newly created :class:`~.types.ActionGroup` instance.
+
+.. literalinclude:: _static/assets/examples/005-nested-action-group.py
+   :emphasize-lines: 11,14,19
+
+.. important::
+   Note that the :func:`~.types.param` decorator is only available from the
+   :class:`~.completer.ActionCompleter` instance. You should always be using the
+   completers instance that is sent to the :func:`~prompt_toolkit.shortcuts.prompt`
+   call to register any parameters for **any** actions (no matter how nested they are).
+
+   .. code-block:: python
+
+      nested_group = completer.group("nested-group")
+
+      # Invalid, @param is not available on the group
+      @nested_group.action("invalid-action")
+      @nested_group.param(None)
+      def _invalid_action(invalid_param):
+         ...
+
+      # Valid, always use @param from the completer
+      @nested_group.action("valid-action")
+      @completer.param(None)
+      def _valid_action(valid_param):
+         ...
+
 
 
 Styling Completions
 -------------------
 
+Now that we have some context into how we create groups, actions, and parameters, we can
+talk about customizing the style of the completions.
+Each :class:`~.types.ActionGroup`, :class:`~.types.Action`, and
+:class:`~.types.ActionParam` has the ``style``, ``selected_style``, ``display``, and
+``display_meta`` properties.
 
-Registering Actions
--------------------
+Color
+:::::
 
+If you want to change the coloring of the completion results, you can use the ``style``
+and ``selected_style`` properties to do so.
+These styles are given directly to the :class:`~prompt_toolkit.completion.Completion`
+instance and will result in the completion results being styled all the same way:
+
+.. literalinclude:: _static/assets/examples/007-color-completions.py
+   :emphasize-lines: 11-12
+
+
+Both ``style`` and ``selected_style`` can be lazily evaluated if necessary.
+Simply pass a callable with a signature similar to the following:
+
+.. code-block:: python
+
+   from action_completer.types import ActionCompletable_T
+
+   def dynamic_style(completable: ActionCompletable_T, completable_value: str) -> str:
+      ...
+
+
+For example, let's say we want to style the "John" completion with a blue background and
+leave everyone else with a red background:
+
+.. literalinclude:: _static/assets/examples/008-dynamic-color-completions.py
+   :emphasize-lines: 8-14,20
+
+
+.. warning::
+   Take note of the return type for the dynamic style value.
+   This callable has the constraint that it **requires** we always return a string
+   of some kind; it should never be allowed to return ``None``.
+   To omit from styling a completion, simply return an empty string.
+   Typically it is safest to return early for any desired stylings you would like to
+   apply and leave an empty string as the last available return value at the bottom of
+   the callable:
+
+   .. code-block:: python
+
+      def dynamic_style(completable: ActionCompletable_T, completable_value: str) -> str:
+         # logic to determine the desired style for a completion result
+         ...
+
+         # always return AT LEAST an empty string
+         return ""
+
+Text
+::::
+
+You can customize the actual display of the completion text itself by passing some
+string to the ``display`` keyword argument:
+
+.. literalinclude:: _static/assets/examples/009-display-completions.py
+   :emphasize-lines: 8
+
+
+We can also pass an instance of :class:`~prompt_toolkit.formatted_text.FormattedText` to
+``display`` to get some pretty fancy completions:
+
+.. literalinclude:: _static/assets/examples/010-display-formattedtext-completions.py
+   :emphasize-lines: 1,9
+
+
+Similar to the ``style`` and ``selected_style`` properties, we can define the
+``display`` lazily through a callable.
+The callable for the ``display`` should have a signature similar to the following:
+
+.. code-block:: python
+
+   from typing import Union
+
+   from prompt_toolkit.formatted_text import FormattedText
+   from action_completer.types import ActionCompletable_T
+
+   def dynamic_display(
+      completable: ActionCompletable_T, completable_value: str
+   ) -> Union[str, FormattedText]:
+      ...
+
+
+
+Description
+:::::::::::
+
+If you would like to add a little helpful description to a completion, you can do so
+through the ``display_meta`` keyword argument.
+
+.. literalinclude:: _static/assets/examples/011-display-meta-completions.py
+   :emphasize-lines: 8
+
+
+Everything that you can do with ``display``, you can also do with ``display_meta``.
+For more details about what kind of formats you can display, you should read through the
+`prompt-toolkit documentation <https://python-prompt-toolkit.readthedocs.io/en/stable/index.html>`_
 
 Conditional Actions
 -------------------
 
+Both :class:`~.types.Action` and :class:`~.types.ActionGroup` can be gated behind a
+:class:`~prompt_toolkit.filters.Filter` to indicate if the action or group should be
+considered completable.
+This filter is provided through the ``active`` keyword argument; by default it is set to
+``None``.
+If this filter is provided, it will be evaluated during completion and, if it evaluates
+to a falsy value, completion will not occur for the associated action or group.
+
+For example, here is a quick (and dirty) method for only allowing a ``hello`` action to
+run once the user has first called ``activate``:
+
+.. literalinclude:: _static/assets/examples/012-conditional-actions.py
+   :emphasize-lines: 22,27,32
+
 
 Custom Action Execution
 -----------------------
+
+If you ever need to tweak how the requested action is executed, you can fetch a
+:func:`~functools.partial` instance from the completer instead of just calling
+:meth:`~.completer.ActionCompleter.run_action`.
+Use the :meth:`~.completer.ActionCompleter.get_partial_action` method with the output of
+the prompt to get an callable for the desired action with the casted parameters applied:
+
+.. literalinclude:: _static/assets/examples/013-custom-action-execution.py
+   :emphasize-lines: 10,12,16,18-19

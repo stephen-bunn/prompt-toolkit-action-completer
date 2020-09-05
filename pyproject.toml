@@ -86,6 +86,7 @@ twine = "^3.2.0"
 vprof = { version = "^0.38", optional = true }
 sphinx-rtd-theme = "^0.5.0"
 sphinx-autodoc-typehints = "^1.11.0"
+ipdb = "^0.13.3"
 
 [tool.poetry.extras]
 profile = ["pyprof2calltree", "vprof"]

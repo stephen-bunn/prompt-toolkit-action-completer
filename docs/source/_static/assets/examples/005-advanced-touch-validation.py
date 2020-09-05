@@ -11,10 +11,7 @@ completer = ActionCompleter()
 
 
 def _validate_touch(action_param: ActionParam, param_value: str, fragments: List[str]):
-    dirpath = Path(fragments[-1])
-    if not dirpath.is_dir():
-        raise ValidationError(message="Not an existing directory")
-
+    dirpath = Path(fragments[0])
     filepath = dirpath.joinpath(f"{param_value!s}.txt")
     if filepath.is_file():
         raise ValidationError(message=f"File at {filepath!s} already exists")
