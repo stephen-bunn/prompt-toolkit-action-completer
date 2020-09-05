@@ -451,7 +451,7 @@ class ActionCompleter(Completer):
         ):
             source = action_group.children[completion_text]
             if source.active is not None and not source.active():
-                return
+                continue
 
             yield self._build_completion(
                 completable=source,
