@@ -167,7 +167,7 @@ class ActionCompleter(Completer):
         # Hello, World!
 
 
-    If you want to go a more declaritive route, you can explicitly build the tree
+    If you want to go a more declarative route, you can explicitly build the tree
     structure of :class:`~.types.ActionGroup`, :class:`~.types.Action`, and
     :class:`~.types.ActionParam` yourself.
 
@@ -254,7 +254,7 @@ class ActionCompleter(Completer):
 
         # It may seem weird to put a simple `in` check in its own method. I've run
         # into refactor hell many times in the past from developers not isolating
-        # responsibilty such as this correctly.
+        # responsibility such as this correctly.
 
         return partial_string in full_string
 
@@ -284,6 +284,37 @@ class ActionCompleter(Completer):
             dynamic_style = get_dynamic_value(completable, completable.style, text)
             if isinstance(dynamic_style, str):
                 return dynamic_style
+
+        return ""
+
+    def _get_completion_selected_style(
+        self,
+        completable: ActionCompletable_T,
+        text: str,
+        override: Optional[str] = None,
+    ) -> str:
+        """Get the appropriate completion selected style for a given source.
+
+        Args:
+            completable (ActionCompletable_T): The completable source instance to
+                extract the appropriate style from
+            text (str): The text used to trigger the current source
+            override (Optional[str], optional): An explicit override for any selected
+                style (typically used from nested completers)
+
+        Returns:
+            str: The appropriate selected style string, may be blank when desired
+        """
+
+        if override:
+            return override
+
+        if completable.selected_style:
+            dynamic_selected_style = get_dynamic_value(
+                completable, completable.selected_style, text
+            )
+            if isinstance(dynamic_selected_style, str):
+                return dynamic_selected_style
 
         return ""
 
@@ -355,6 +386,7 @@ class ActionCompleter(Completer):
         text: str,
         start_position: int = 0,
         style: Optional[str] = None,
+        selected_style: Optional[str] = None,
         display: Optional[LazyText_T] = None,
         display_meta: Optional[LazyText_T] = None,
     ) -> Completion:
@@ -366,20 +398,25 @@ class ActionCompleter(Completer):
             text (str): The text used to trigger the completion
             start_position (int, optional): The starting position of the completion.
                 Defaults to 0.
-            style (Optional[str], optional): Style override to use for the completion.
+            style (Optional[str], optional): Style override to use for the completion
+            selected_style (Optional[str], optional): Selected style override to use for
+                the completion
             display (Optional[LazyText_T], optional): Display override to use for the
                 completion
             display_meta (Optional[LazyText_T], optional): Display meta (description)
                 override to use for the completion
 
         Returns:
-            Completion: A completion instance for teh given source and text
+            Completion: A completion instance for the given source and text
         """
 
         return Completion(
             text=text,
             start_position=start_position,
             style=self._get_completion_style(completable, text, style),
+            selected_style=self._get_completion_selected_style(
+                completable, text, selected_style
+            ),
             display=self._get_completion_display(completable, text, display),
             display_meta=self._get_completion_display_meta(
                 completable, text, display_meta
@@ -467,7 +504,7 @@ class ActionCompleter(Completer):
         """Iterate iterable (Iterable[str]) action parameter completions.
 
         Args:
-            action (Action): The action the paraeter is tied to
+            action (Action): The action the parameter is tied to
             action_param (ActionParam): The action parameter to generate completions for
             param_value (str): The current value of the parameter
             complete_event (CompleteEvent): The completion event for the completion
@@ -678,7 +715,7 @@ class ActionCompleter(Completer):
     def get_completions(
         self, document: Document, complete_event: CompleteEvent
     ) -> Generator[Completion, None, None]:
-        """Generate completiosn for the given prompt document.
+        """Generate completions for the given prompt document.
 
         Args:
             document (~prompt_toolkit.document.Document): The document directly from
@@ -749,7 +786,7 @@ class ActionCompleter(Completer):
             yield from fragments[len(action.params) :]
 
     def get_partial_action(self, prompt_result: str) -> Callable[..., Any]:
-        """Get the partial for teh action callable with action parameters included.
+        """Get the partial for the action callable with action parameters included.
 
         Args:
             prompt_result (str): The result of the completer's prompt call

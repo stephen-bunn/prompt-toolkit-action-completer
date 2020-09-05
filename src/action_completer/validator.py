@@ -158,6 +158,13 @@ class ActionValidator(Validator):
             if child.active is None or child.active()
         ]
 
+        # XXX: I'm a little confused about when this state is reached. I haven't yet
+        # tracked down the exact cases when fragments are not available (perhaps
+        # very-early state trying to validate the root action group?). In any case, this
+        # is just a safe guard that shouldn't break anything that I am aware of
+        if len(fragments) <= 0:
+            return
+
         self._validate_choices(
             available_choices,
             fragments[-1],

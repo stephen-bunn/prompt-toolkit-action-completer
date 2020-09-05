@@ -40,7 +40,7 @@ Attributes:
         that results in a string.
 
     LazyText_T (typing.Type): Similar to :data:`~LazyString_T`, this defines the
-        allowable types for opiontally lazy evaluated strings or instances of
+        allowable types for optionally lazy evaluated strings or instances of
         :class:`~prompt_toolkit.formatted_text.FormattedText`. This is either just an
         instance or a callable that results in an instance.
 """
@@ -101,6 +101,8 @@ class ActionParam:
             to during execution of the action tied to this parameter
         style (Optional[:data:`~LazyString_T`], optional): The style string to apply to
             completion results for the action parameter
+        selected_style (Optional[:data:`~LazyString_T`], optional): The style string to
+            apply to selected completion results for the action parameter
         display (Optional[:data:`~LazyText_T`], optional): The custom display to apply
             to completion results for the action parameter
         display_meta (Optional[:data:`~LazyText_T`], optional): The custom display meta
@@ -113,6 +115,7 @@ class ActionParam:
     source: ActionParamSource_T = attr.ib()
     cast: Optional[Type] = attr.ib(default=None)
     style: Optional[LazyString_T] = attr.ib(default=None)
+    selected_style: Optional[LazyString_T] = attr.ib(default=None)
     display: Optional[LazyText_T] = attr.ib(default=None)
     display_meta: Optional[LazyText_T] = attr.ib(default=None)
     validators: Optional[List[ActionParamValidator_T]] = attr.ib(default=None)
@@ -153,6 +156,8 @@ class Action:
             in the same order of positional arguments for the ``action`` callable.
         style (Optional[:data:`~LazyString_T`], optional): The style string to apply to
             completion results for the action
+        selected_style (Optional[:data:`~LazyString_T`], optional): The style string to
+            apply to selected completion results for the action
         display (Optional[:data:`~LazyText_T`], optional): The custom display to apply
             to completion results for the action
         display_meta (Optional[:data:`~LazyText_T`], optional): The custom display meta
@@ -161,7 +166,7 @@ class Action:
             that results in a boolean to indicate if the action should be considred as
             active and displayed as a completion result
         capture_all (bool, optional): If there is the option for this action to accept
-            more arguments than defiend by the provided parameters, this flag will
+            more arguments than defined by the provided parameters, this flag will
             allow for any number of following arguments (after parameters) as additional
             positional arguments to the provided ``action`` callable, defaults to False
     """
@@ -169,6 +174,7 @@ class Action:
     action: Optional[Callable[..., Any]] = attr.ib(default=None)
     params: Optional[List[ActionParam]] = attr.ib(default=None)
     style: Optional[LazyString_T] = attr.ib(default=None)
+    selected_style: Optional[LazyString_T] = attr.ib(default=None)
     display: Optional[LazyText_T] = attr.ib(default=None)
     display_meta: Optional[LazyText_T] = attr.ib(default=None)
     active: Optional[Filter] = attr.ib(default=None)
@@ -227,6 +233,8 @@ class ActionGroup:
             the group's children
         style (Optional[:data:`~LazyString_T`], optional): The style string to apply to
             completion results for the action group
+        selected_style (Optional[:data:`~LazyString_T`], optional): The style string to
+            apply to selected completion results for the action group
         display (Optional[:data:`~LazyText_T`], optional): The custom display to apply
             to completion results for the action group
         display_meta (Optional[:data:`~LazyText_T`], optional): The custom display meta
@@ -238,6 +246,7 @@ class ActionGroup:
 
     children: Dict[str, Union["ActionGroup", Action]] = attr.ib()
     style: Optional[LazyString_T] = attr.ib(default=None)
+    selected_style: Optional[LazyString_T] = attr.ib(default=None)
     display: Optional[LazyText_T] = attr.ib(default=None)
     display_meta: Optional[LazyText_T] = attr.ib(default=None)
     active: Optional[Filter] = attr.ib(default=None)
@@ -300,6 +309,7 @@ class ActionGroup:
         name: str,
         children: Optional[Dict[str, Union["ActionGroup", Action]]] = None,
         style: Optional[LazyString_T] = None,
+        selected_style: Optional[LazyString_T] = None,
         display: Optional[LazyText_T] = None,
         display_meta: Optional[LazyText_T] = None,
         active: Optional[Filter] = None,
@@ -335,6 +345,8 @@ class ActionGroup:
                 (value) that forms the group's children
             style (Optional[:data:`~LazyString_T`], optional): The style string to
                 apply to completion results for the action group
+            selected_style (Optional[:data:`~LazyString_T`], optional): The style string
+                to apply to selected completion results for the action group
             display (Optional[:data:`~LazyText_T`], optional): The custom display to
                 apply to completion results for the action group
             display_meta (Optional[:data:`~LazyText_T`], optional): The custom display
@@ -361,6 +373,7 @@ class ActionGroup:
         group = ActionGroup(
             children=children or {},
             style=style,
+            selected_style=selected_style,
             display=display,
             display_meta=display_meta,
             active=active,
@@ -374,6 +387,7 @@ class ActionGroup:
         name: str,
         params: Optional[List[ActionParam]] = None,
         style: Optional[LazyString_T] = None,
+        selected_style: Optional[LazyString_T] = None,
         display: Optional[LazyText_T] = None,
         display_meta: Optional[LazyText_T] = None,
         active: Optional[Filter] = None,
@@ -410,6 +424,8 @@ class ActionGroup:
                 parameters to complete and handle within the action
             style (Optional[:data:`~LazyString_T`], optional): The style string to apply
                 to completion results for the action
+            selected_style (Optional[:data:`~LazyString_T`], optional): The style string
+                to apply to selected completion results for the action
             display (Optional[:data:`~LazyText_T`], optional): The custom display to
                 apply to completion results for the action
             display_meta (Optional[:data:`~LazyText_T`], optional): The custom display
@@ -418,7 +434,7 @@ class ActionGroup:
                 filter that results in a boolean to indicate if the action group should
                 be considred as active and displayed as a completion result
             capture_all (bool, optional): If there is the option for this action to
-                accept more arguments than defiend by the provided parameters, this flag
+                accept more arguments than defined by the provided parameters, this flag
                 will allow for any number of following arguments (after parameters) as
                 additional positional arguments to the provided ``action`` callable,
                 defaults to False
@@ -449,6 +465,7 @@ class ActionGroup:
                 action=func,
                 params=action_parameters,
                 style=style,
+                selected_style=selected_style,
                 display=display,
                 display_meta=display_meta,
                 active=active,
@@ -466,8 +483,8 @@ class ActionGroup:
                 # This is later used in the @param decorator to determine if a parameter
                 # is being added to an already registered action and therefore the param
                 # SHOULD NOT (not could not) be added to the action. This None value is
-                # used as a sentinal to indicate the action has already been registered.
-                # Any state where action is not currenly registered should be either:
+                # used as a sentinel to indicate the action has already been registered.
+                # Any state where action is not currently registered should be either:
                 #     1. The function does not appear in the dictionary
                 #     2. The dictionary value for the function key is an instance of a
                 #        list of ActionParams
@@ -483,6 +500,7 @@ def param(
     source: ActionParamSource_T,
     cast: Optional[Type] = None,
     style: Optional[LazyString_T] = None,
+    selected_style: Optional[LazyString_T] = None,
     display: Optional[LazyText_T] = None,
     display_meta: Optional[LazyText_T] = None,
     validators: Optional[List[ActionParamValidator_T]] = None,
@@ -567,6 +585,8 @@ def param(
             to during execution of the action tied to this parameter
         style (Optional[:data:`~LazyString_T`], optional): The style string to apply to
             completion results for the action parameter
+        selected_style (Optional[:data:`~LazyString_T`], optional): The style string to
+            apply to selected completion results for the action parameter
         display (Optional[:data:`~LazyText_T`], optional): The custom display to apply
             to completion results for the action parameter
         display_meta (Optional[:data:`~LazyText_T`], optional): The custom display meta
@@ -584,6 +604,7 @@ def param(
             source=source,
             cast=cast,
             style=style,
+            selected_style=selected_style,
             display=display,
             display_meta=display_meta,
             validators=validators,
@@ -591,7 +612,7 @@ def param(
 
         parameter_store = _decorator_staging.get(func, [])
         # When the parameter's function is already registered and marked with the None
-        # sentinal, we are attempting to add a parameter to an action that has already
+        # sentinel, we are attempting to add a parameter to an action that has already
         # been registered and therefore should not have any more parameters added.
         if parameter_store is None:
             warnings.warn(
