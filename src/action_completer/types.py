@@ -45,6 +45,7 @@ Attributes:
         instance or a callable that results in an instance.
 """
 
+import re
 import warnings
 from typing import (
     Any,
@@ -120,29 +121,6 @@ class ActionParam:
     display_meta: Optional[LazyText_T] = attr.ib(default=None)
     validators: Optional[List[ActionParamValidator_T]] = attr.ib(default=None)
 
-    @classmethod
-    def from_dict(cls, param_dictionary: dict) -> "ActionParam":
-        """Build a new action parameter instance from an appropriate dictionary.
-
-        Args:
-            param_dictionary (dict): The dictionary to use to create the action
-                parameter
-
-        Returns:
-            ActionParam: The built action parameter instance
-        """
-
-        return cls(**param_dictionary)
-
-    def to_dict(self) -> dict:
-        """Dump the current action parameter instance to a dictionary.
-
-        Returns:
-            dict: The appropriate representative dictionary for the action parameter
-        """
-
-        return attr.asdict(self)
-
 
 @attr.s
 class Action:
@@ -179,37 +157,6 @@ class Action:
     display_meta: Optional[LazyText_T] = attr.ib(default=None)
     active: Optional[Filter] = attr.ib(default=None)
     capture_all: bool = attr.ib(default=False)
-
-    @classmethod
-    def from_dict(cls, action_dictionary: dict) -> "Action":
-        """Build a new action instance from an appropriate dictionary.
-
-        Args:
-            action_dictionary (dict): The dictionary to use to create the action
-
-        Returns:
-            Action: The built action instance
-        """
-
-        params = action_dictionary.get("params")
-        action_dictionary.update(
-            {
-                "params": [ActionParam.from_dict(value) for value in params]
-                if params
-                else None
-            }
-        )
-
-        return cls(**action_dictionary)
-
-    def to_dict(self) -> dict:
-        """Dump the current action instance to a dictionary.
-
-        Returns:
-            dict: The appropriate representative dictionary for the action
-        """
-
-        return attr.asdict(self)
 
 
 @attr.s
@@ -260,49 +207,17 @@ class ActionGroup:
             value (dict): The value of the children attribute
 
         Raises:
-            ValueError: When any children keys contain spaces
+            ValueError: When any children keys contain no characters or contain spaces
         """
 
-        names_with_spaces = [name for name in value if " " in name]
-        if names_with_spaces:
+        invalid_names = [
+            name for name in value if len(name) <= 0 or re.findall(r"\s+", name)
+        ]
+        if invalid_names:
             raise ValueError(
-                "group children can not use names including spaces, "
-                f"{names_with_spaces!r}"
+                "group children can not use names without characters or names "
+                f"including spaces, {invalid_names!r}"
             )
-
-    @classmethod
-    def from_dict(cls, group_dictionary: dict) -> "ActionGroup":
-        """Build a new action group instance from an appropriate dictionary.
-
-        Args:
-            group_dictionary (dict): The dictionary to use to create the action group
-
-        Returns:
-            ActionGroup: The built action group instance
-        """
-
-        group_dictionary.update(
-            {
-                "children": {
-                    key: (
-                        cls.from_dict(value)
-                        if "children" in value
-                        else Action.from_dict(value)
-                    )
-                    for key, value in group_dictionary.get("children", {}).items()
-                }
-            }
-        )
-        return cls(**group_dictionary)
-
-    def to_dict(self) -> dict:
-        """Dump the current action group instance to a dictionary.
-
-        Returns:
-            dict: The appropriate representative dictionary for the action group
-        """
-
-        return attr.asdict(self)
 
     def group(
         self,
@@ -363,8 +278,10 @@ class ActionGroup:
             ActionGroup: The created action group
         """
 
-        if " " in name:
-            raise ValueError(f"groups can not use names including spaces, {name!r}")
+        if len(name) <= 0:
+            raise ValueError(f"group names must contain characters, {name!r}")
+        if re.findall(r"\s+", name):
+            raise ValueError(f"groups can not use names including whitespace, {name!r}")
         if name in self.children:
             raise ValueError(
                 f"name {name!r} already registered as {self.children[name]!r}"
@@ -447,8 +364,12 @@ class ActionGroup:
             Callable[..., Any]: The newly wrapped action callable
         """
 
-        if " " in name:
-            raise ValueError(f"actions can not use names including spaces, {name!r}")
+        if len(name) <= 0:
+            raise ValueError(f"action names must contain characters, {name!r}")
+        if re.findall(r"\s+", name):
+            raise ValueError(
+                f"actions can not use names including whitespace, {name!r}"
+            )
         if name in self.children:
             raise ValueError(
                 f"name {name!r} already registered as {self.children[name]!r}"

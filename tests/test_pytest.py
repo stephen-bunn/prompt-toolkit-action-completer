@@ -2,7 +2,7 @@
 # Copyright (c) 2020 Stephen Bunn <stephen@bunn.io>
 # ISC License <https://choosealicense.com/licenses/isc>
 
-"""This moudle exposes some initial skeleton-code sanity checks."""
+"""This module exposes some initial skeleton-code sanity checks."""
 
 
 def test_pytest():
