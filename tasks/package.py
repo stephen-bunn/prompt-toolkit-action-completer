@@ -4,6 +4,10 @@
 
 """Contains Invoke task functions for package building and testing."""
 
+import shutil
+import webbrowser
+from pathlib import Path
+
 import invoke
 
 from .utils import report
@@ -18,6 +22,32 @@ def test(ctx, verbose=False):
     if verbose:
         test_command += " --verbose"
     ctx.run(test_command)
+
+
+@invoke.task(pre=[test])
+def coverage(ctx, view=False):
+    """Build coverage report for test run."""
+
+    reports_dirpath = Path(__file__).parent.parent.joinpath("reports")
+    if reports_dirpath.is_dir():
+        report.debug(
+            ctx,
+            "package.coverage",
+            f"clearing reports directory at {reports_dirpath!s}",
+        )
+        shutil.rmtree(reports_dirpath.as_posix())
+
+    report.debug(
+        ctx, "package.coverage", f"creating reports directory at {reports_dirpath!s}"
+    )
+    reports_dirpath.mkdir()
+    report.info(ctx, "package.coverage", "building coverage report")
+    ctx.run("coverage html -d reports/")
+
+    if view:
+        index_filepath = reports_dirpath.joinpath("index.html")
+        report.debug(ctx, "package.coverage", f"opening report from {index_filepath!s}")
+        webbrowser.open(f"file:{index_filepath!s}")
 
 
 @invoke.task
