@@ -250,3 +250,23 @@ def action_group(
             **kwargs,
         )
     )
+
+
+@composite
+def action_completable(draw, **kwargs) -> SearchStrategy[types.ActionCompletable_T]:
+    """Composite strategy for building quick completables."""
+
+    return draw(
+        one_of(action_param(**kwargs), action(**kwargs), action_group(**kwargs))
+    )
+
+
+@composite
+def action_completer(
+    draw, group_strategy: Optional[SearchStrategy[types.ActionGroup]] = None
+) -> SearchStrategy[ActionCompleter]:
+    """Composite strategy for quickly building :class:`~.completer.ActionCompleter`s."""
+
+    return ActionCompleter(
+        root=draw(group_strategy if group_strategy else action_group())
+    )

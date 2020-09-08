@@ -120,7 +120,7 @@ class CompletionIterator_T(Protocol):
         complete_event: CompleteEvent,
         start_position: int = 0,
     ) -> Generator[Completion, None, None]:
-        ...
+        ...  # pragma: no cover
 
 
 class ActionParamCompletionIterator_T(Protocol):
@@ -137,7 +137,7 @@ class ActionParamCompletionIterator_T(Protocol):
         complete_event: CompleteEvent,
         start_position: int = 0,
     ) -> Generator[Completion, None, None]:
-        ...
+        ...  # pragma: no cover
 
 
 @attr.s
@@ -201,11 +201,18 @@ class ActionCompleter(Completer):
         if not self.root:
             self.root = ActionGroup(children={})
 
-        if any((self.root.display, self.root.display_meta, self.root.style)):
+        if any(
+            (
+                self.root.style,
+                self.root.selected_style,
+                self.root.display,
+                self.root.display_meta,
+            )
+        ):
             warnings.warn(
-                "Display parameters (display, display_meta, style) are never presented "
-                "on the root action group, please remove any of these parameters from "
-                "the root action group",
+                "Display parameters (display, display_meta, style, selected_style) are "
+                "never presented on the root action group, please remove any of these "
+                "parameters from the root action group",
                 UserWarning,
             )
 
@@ -343,8 +350,7 @@ class ActionCompleter(Completer):
             dynamic_display_meta = get_dynamic_value(completable, override, text)
             if dynamic_display_meta:
                 return dynamic_display_meta
-
-        if completable.display_meta:
+        elif completable.display_meta:
             dynamic_display_meta = get_dynamic_value(
                 completable, completable.display_meta, text
             )
