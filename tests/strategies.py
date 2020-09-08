@@ -35,10 +35,16 @@ from action_completer import ActionCompleter, types
 
 
 @composite
-def fragment(draw) -> SearchStrategy[str]:
+def fragment(draw, min_size: int = 1, max_size: int = 15) -> SearchStrategy[str]:
     """Composite strategy for building a fragment-safe string."""
 
-    return draw(text(alphabet=(ascii_letters + digits + punctuation), min_size=1))
+    return draw(
+        text(
+            alphabet=(ascii_letters + digits + punctuation),
+            min_size=min_size,
+            max_size=max_size,
+        )
+    )
 
 
 @composite
@@ -95,6 +101,89 @@ def builtin_types(
 
 
 @composite
+def formatted_text(
+    draw,
+    html_strategy: Optional[SearchStrategy[str]] = None,
+    ansi_strategy: Optional[SearchStrategy[str]] = None,
+) -> SearchStrategy[FormattedText]:
+    """Composite strategy to build basic instances of FormattedText."""
+
+    return draw(
+        sampled_from(
+            [
+                to_formatted_text(
+                    HTML(
+                        draw(
+                            html_strategy
+                            if html_strategy
+                            else just("<b>Hello, World!</b>")
+                        )
+                    )
+                ),
+                to_formatted_text(
+                    ANSI(
+                        draw(
+                            ansi_strategy
+                            if ansi_strategy
+                            else just("\x1b[1mHello, World!\x1b[0m")
+                        )
+                    )
+                ),
+            ]
+        )
+    )
+
+
+@composite
+def lazy_string(
+    draw, value_strategy: Optional[SearchStrategy[str]] = None
+) -> SearchStrategy[types.LazyString_T]:
+    """Composite strategy to build basic :class:`~.types.LazyString_T` types."""
+
+    return draw(
+        sampled_from(
+            [
+                draw(value_strategy if value_strategy else fragment()),
+                lambda *_: draw(value_strategy if value_strategy else fragment()),
+            ]
+        )
+    )
+
+
+@composite
+def lazy_text(
+    draw,
+    value_strategy: Optional[SearchStrategy[Union[str, FormattedText]]] = None,
+    allow_none: bool = True,
+) -> SearchStrategy[types.LazyText_T]:
+    """Composite strategy to build basic :class:`~.types.LazyText_T` types.
+
+    In accordance to the lazy text type, this strategy can build nones. If you wish to
+    disable this strategy from generating None types, set ``allow_none`` to False.
+    """
+
+    return draw(
+        one_of(
+            sampled_from(
+                [
+                    draw(
+                        value_strategy
+                        if value_strategy
+                        else one_of(fragment(), formatted_text())
+                    ),
+                    lambda *_: draw(
+                        value_strategy
+                        if value_strategy
+                        else one_of(fragment(), formatted_text())
+                    ),
+                ]
+            ),
+            none() if allow_none else nothing(),
+        )
+    )
+
+
+@composite
 def action_param(draw, **kwargs) -> SearchStrategy[types.ActionParam]:
     """Composite strategy for building a basic :class:`~.types.ActionParam`."""
 
@@ -109,18 +198,16 @@ def action(draw, **kwargs) -> SearchStrategy[types.Action]:
 
 
 @composite
-def action_group_children(
+def action_group(
     draw,
     key_strategy: Optional[SearchStrategy[str]] = None,
     action_strategy: Optional[SearchStrategy[types.Action]] = None,
     max_depth: int = 5,
     min_size: int = 0,
     max_size: int = 5,
-) -> SearchStrategy[Dict[str, Union[types.ActionGroup, types.Action]]]:
-    """Composite strategy for building an :class:`~.types.ActionGroup`'s children.
-
-    This requires its own strategy since this is a recursive strategy and trying to
-    embed this into the ``action_group`` strategy can be a nightmare.
+    **kwargs,
+) -> SearchStrategy[types.ActionGroup]:
+    """Composite strategy for building a basic :class:`~.types.ActionGroup`.
 
     Args:
         key_strategy (Optiona[SearchStrategy[str]], optional): The strategy for
@@ -136,39 +223,29 @@ def action_group_children(
             on one level of the children dictionary, defaults to 5
 
     Returns:
-        SearchStrategy[Dict[str, Union[types.ActionGroup, types.Action]]]:
-            The children dictionary that can be given to create an action group
+        SearchStrategy[types.ActionGroup]: A strategy for the fully created action group
     """
 
     return draw(
-        recursive(
-            dictionaries(
-                (key_strategy if key_strategy else fragment()),  # type: ignore
-                (action_strategy if action_strategy else action()),
-                min_size=min_size,
-                max_size=max_size,
-            ),
-            lambda children: dictionaries(
-                (key_strategy if key_strategy else fragment()),  # type: ignore
-                one_of(children, (action_strategy if action_strategy else action())),
-                min_size=min_size,
-                max_size=max_size,
-            ),
-            max_leaves=max_depth,
-        )
-    )
-
-
-@composite
-def action_group(draw, **kwargs) -> SearchStrategy[types.ActionGroup]:
-    """Composite strategy for building a basic :class:`~.types.ActionGroup`."""
-
-    children_strategy = kwargs.pop("children", None)
-    return draw(
         builds(
             types.ActionGroup,
-            children=(
-                children_strategy if children_strategy else action_group_children()
+            children=recursive(
+                dictionaries(
+                    (key_strategy if key_strategy else fragment()),  # type: ignore
+                    (action_strategy if action_strategy else action()),
+                    min_size=min_size,
+                    max_size=max_size,
+                ),
+                lambda children: dictionaries(
+                    (key_strategy if key_strategy else fragment()),  # type: ignore
+                    one_of(
+                        builds(types.ActionGroup, children=children, **kwargs),
+                        (action_strategy if action_strategy else action()),
+                    ),
+                    min_size=min_size,
+                    max_size=max_size,
+                ),
+                max_leaves=max_depth,
             ),
             **kwargs,
         )

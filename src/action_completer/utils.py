@@ -19,6 +19,8 @@ from .types import (
     LazyText_T,
 )
 
+DEFAULT_FUZZY_TOLERANCE = 75
+
 
 def noop(*args, **kwargs) -> None:
     """Noop function that does absolutely nothing."""
@@ -85,7 +87,7 @@ def extract_context(action_group: ActionGroup, fragments: List[str]) -> ActionCo
     depth = 0
 
     for fragment in fragments:
-        if isinstance(current_completable, Action):
+        if isinstance(current_completable, Action):  # pragma: no cover
             break
 
         for name, source in current_completable.children.items():
@@ -111,7 +113,7 @@ def extract_context(action_group: ActionGroup, fragments: List[str]) -> ActionCo
                         source,
                         fragments[active_fragment_depth:],
                     )
-                elif isinstance(source, ActionGroup):
+                elif isinstance(source, ActionGroup):  # pragma: no cover
                     current_completable = source
 
     return current_parent, current_name, current_completable, fragments[depth:]
@@ -184,14 +186,16 @@ def iter_best_choices(
         return
 
     # if no value is given, yield all choices
-    if len(user_value) <= 0:
+    if not user_value or len(user_value) <= 0:
         yield from choices
         return
 
     for choice, confidence in fuzzy_process.extract(
         user_value, choices, limit=len(choices)
     ):
-        if confidence < fuzzy_tolerance:
+        if confidence is None or confidence < (
+            fuzzy_tolerance or DEFAULT_FUZZY_TOLERANCE
+        ):
             continue
 
         yield choice

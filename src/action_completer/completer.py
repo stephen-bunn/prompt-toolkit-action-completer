@@ -214,33 +214,6 @@ class ActionCompleter(Completer):
         self.action = self.root.action
         self.param = param
 
-    @classmethod
-    def from_dict(cls, completer_dictionary: dict) -> "ActionCompleter":
-        """Create an instance of the completer from a dictionary representation.
-
-        Args:
-            completer_dictionary (dict): The dictionary to use to create the completer
-
-        Returns:
-            ActionCompleter: The newly created completer instance
-        """
-
-        return cls(
-            root=ActionGroup.from_dict(completer_dictionary.get("root", None)),
-            fuzzy_tolerance=completer_dictionary.get(
-                "fuzzy_tolerance", DEFAULT_FUZZY_TOLERANCE
-            ),
-        )
-
-    def to_dict(self) -> dict:
-        """Dump the current completer to a dictionary representation.
-
-        Returns:
-            dict: The dictionary representation of the current completer instance
-        """
-
-        return attr.asdict(self)
-
     def _compare_string(self, partial_string: str, full_string: str) -> bool:
         """Check if a source string is contained within a target string.
 

@@ -14,27 +14,13 @@ from hypothesis.strategies import builds, lists, one_of, text
 
 from action_completer import types, utils
 
-from .strategies import (
-    action,
-    action_group,
-    action_group_children,
-    action_param,
-    fragment,
-)
+from .strategies import action, action_group, action_param, fragment
 
 
-@given(
-    action_group_children(
-        key_strategy=one_of(text(max_size=0), text(alphabet=whitespace)),
-        min_size=1,
-        max_size=1,
-        max_depth=1,
-    )
-)
-def test_ActionGroup_validates_children(invalid_children: dict):
-    print(invalid_children)
+@given(one_of(text(max_size=0), text(alphabet=whitespace)))
+def test_ActionGroup_validates_children(invalid_key: str):
     with pytest.raises(ValueError):
-        types.ActionGroup(children=invalid_children)
+        types.ActionGroup(children={invalid_key: types.Action()})
 
 
 @given(action_group(), fragment())
