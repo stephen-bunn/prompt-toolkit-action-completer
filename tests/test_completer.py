@@ -6,18 +6,39 @@
 """
 
 from string import printable
-from typing import Optional
+from typing import List, Optional
+from unittest.mock import patch
 
 import pytest
 from hypothesis import assume, given
-from hypothesis.strategies import integers, just, none, nothing, one_of, text
+from hypothesis.strategies import (
+    builds,
+    integers,
+    just,
+    lists,
+    none,
+    nothing,
+    one_of,
+    text,
+)
+from prompt_toolkit.completion import CompleteEvent, Completion
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text import FormattedText
 
 from action_completer import types
 from action_completer.completer import ActionCompleter
 from action_completer.utils import noop
 
-from .strategies import action_completable, action_completer, lazy_string, lazy_text
+from .strategies import (
+    action,
+    action_completable,
+    action_completer,
+    action_group,
+    action_param,
+    fragment,
+    lazy_string,
+    lazy_text,
+)
 
 
 def test_ActionCompleter_defaults_to_empty_root():
@@ -263,3 +284,65 @@ def test_get_completion(
     # content as I would like to
     assert isinstance(completion.display, (str, FormattedText))
     assert isinstance(completion.display_meta, (str, FormattedText))
+
+
+@given(
+    action_completer(just({})),
+    action_group(key_strategy=just("test"), min_size=1, max_size=1, max_depth=1),
+    lists(fragment(), min_size=1),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_group_completions(
+    completer: ActionCompleter,
+    group: types.ActionGroup,
+    fragments: List[str],
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+    with patch.object(
+        completer, "_build_completion", wraps=completer._build_completion
+    ) as mock_build_completion:
+        for completion in list(
+            completer._iter_group_completions(
+                group, fragments, complete_event, start_position=start_position
+            )
+        ):
+            assert isinstance(completion, Completion)
+            assert completion.start_position == start_position
+
+            for child in group.children.values():
+                mock_build_completion.assert_called_with(
+                    completable=child,
+                    text="test",
+                    start_position=start_position,
+                )
+
+
+@given(
+    action_completer(just({})),
+    action_group(
+        action_strategy=action(active=just(Condition(lambda *_: False))),
+        active=just(Condition(lambda *_: False)),
+    ),
+    lists(fragment(), min_size=1),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_group_completions_skips_inactive_sources(
+    completer: ActionCompleter,
+    group: types.ActionGroup,
+    fragments: List[str],
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+    assert (
+        len(
+            list(
+                completer._iter_group_completions(
+                    group, fragments, complete_event, start_position=start_position
+                )
+            )
+        )
+        == 0
+    )
