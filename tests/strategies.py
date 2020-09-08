@@ -33,7 +33,7 @@ from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition, Filter
 from prompt_toolkit.formatted_text import ANSI, HTML, FormattedText, to_formatted_text
 
-from action_completer import ActionCompleter, types
+from action_completer import ActionCompleter, ActionValidator, types
 
 
 @composite
@@ -283,6 +283,17 @@ def action_completer(
     """Composite strategy for quickly building :class:`~.completer.ActionCompleter`s."""
 
     return ActionCompleter(
+        root=draw(group_strategy if group_strategy else action_group())
+    )
+
+
+@composite
+def action_validator(
+    draw, group_strategy: Optional[SearchStrategy[types.ActionGroup]] = None
+) -> SearchStrategy[ActionValidator]:
+    """Composite strategy for quickly building :class:`~.validator.ActionValidator`s."""
+
+    return ActionValidator(
         root=draw(group_strategy if group_strategy else action_group())
     )
 

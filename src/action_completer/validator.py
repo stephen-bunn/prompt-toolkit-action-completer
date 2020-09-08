@@ -162,7 +162,7 @@ class ActionValidator(Validator):
         # tracked down the exact cases when fragments are not available (perhaps
         # very-early state trying to validate the root action group?). In any case, this
         # is just a safe guard that shouldn't break anything that I am aware of
-        if len(fragments) <= 0:
+        if len(fragments) <= 0 or len(available_choices) <= 0:
             return
 
         self._validate_choices(

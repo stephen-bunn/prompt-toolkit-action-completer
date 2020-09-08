@@ -2,8 +2,7 @@
 # Copyright (c) 2020 Stephen Bunn <stephen@bunn.io>
 # ISC License <https://choosealicense.com/licenses/isc>
 
-"""
-"""
+"""Contains tests related to the custom :class:`~.completer.ActionCompleter`."""
 
 from string import ascii_letters, digits, printable
 from typing import Any, Dict, List, Optional
