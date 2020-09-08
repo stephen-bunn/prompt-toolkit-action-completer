@@ -5,7 +5,7 @@
 """Contains useful composite strategies for usage throughout project tests."""
 
 from string import ascii_letters, digits, printable, punctuation
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Type, Union
 
 from hypothesis.strategies import (
     SearchStrategy,
@@ -28,6 +28,8 @@ from hypothesis.strategies import (
     text,
     tuples,
 )
+from prompt_toolkit.completion import CompleteEvent, Completer, Completion
+from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition, Filter
 from prompt_toolkit.formatted_text import ANSI, HTML, FormattedText, to_formatted_text
 
@@ -226,6 +228,19 @@ def action_group(
         SearchStrategy[types.ActionGroup]: A strategy for the fully created action group
     """
 
+    if max_depth <= 0:
+        return draw(
+            builds(
+                types.ActionGroup,
+                children=dictionaries(
+                    (key_strategy if key_strategy else fragment()),  # type: ignore
+                    (action_strategy if action_strategy else action()),
+                    min_size=min_size,
+                    max_size=max_size,
+                ),
+            )
+        )
+
     return draw(
         builds(
             types.ActionGroup,
@@ -270,3 +285,38 @@ def action_completer(
     return ActionCompleter(
         root=draw(group_strategy if group_strategy else action_group())
     )
+
+
+@composite
+def generic_completer(
+    draw,
+    get_completions: Optional[
+        Callable[[Document, CompleteEvent], Generator[Completion, None, None]]
+    ] = None,
+) -> SearchStrategy[Completer]:
+    """Composite strategy for quickly building a generic completer.
+
+    This completer is a :class:`~prompt_toolkit.completion.Completer` subclass that is
+    constructed upon strategy evaluation. This compelter will yield the given document's
+    text by default. You can pass a ``get_completions`` property to this strategy to
+    define your own callable for how completions should be generated from the
+    constructed completer instance.
+    """
+
+    custom_get_completions = get_completions
+
+    # completer is defined within the composite strategy itself to ensure that multiple
+    # requests between tests cases get their own unique copy of the completer instance
+    class DummyCompleter(Completer):
+        def get_completions(
+            self, document: Document, complete_event: CompleteEvent
+        ) -> Generator[Completion, None, None]:
+            if custom_get_completions:
+                yield from custom_get_completions(document, complete_event)
+            else:
+                yield Completion(
+                    text=document.text,
+                    start_position=-len(document.text),
+                )
+
+    return draw(just(DummyCompleter()))

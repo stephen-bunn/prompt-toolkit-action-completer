@@ -707,22 +707,28 @@ class ActionCompleter(Completer):
                 A completion for the given prompt document
         """
 
-        _, _, relative, fragments = extract_context(
+        _, _, completable, fragments = extract_context(
             self.root, get_fragments(document.text)
         )
+
         if len(fragments) <= 0:
             return
 
+        # this starting position is NOT the same as len(document.text)
         start_position = -len(" ".join(fragments))
-        completer: Optional[CompletionIterator_T] = None
-        if isinstance(relative, ActionGroup):
-            completer = cast(CompletionIterator_T, self._iter_group_completions)
-        elif isinstance(relative, Action):
-            completer = cast(CompletionIterator_T, self._iter_action_completions)
+        completion_iterator: Optional[CompletionIterator_T] = None
+        if isinstance(completable, ActionGroup):
+            completion_iterator = cast(
+                CompletionIterator_T, self._iter_group_completions
+            )
+        elif isinstance(completable, Action):
+            completion_iterator = cast(
+                CompletionIterator_T, self._iter_action_completions
+            )
 
-        if completer:
-            for completion in completer(
-                relative, fragments, complete_event, start_position=start_position
+        if completion_iterator:
+            for completion in completion_iterator(
+                completable, fragments, complete_event, start_position=start_position
             ):
                 completion.text = encode_completion(completion.text)
                 yield completion

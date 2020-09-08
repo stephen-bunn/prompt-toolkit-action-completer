@@ -5,29 +5,32 @@
 """
 """
 
-from string import printable
-from typing import List, Optional
-from unittest.mock import patch
+from string import ascii_letters, digits, printable
+from typing import Any, Dict, List, Optional
+from unittest.mock import MagicMock, patch
 
 import pytest
 from hypothesis import assume, given
 from hypothesis.strategies import (
     builds,
+    dictionaries,
     integers,
     just,
     lists,
     none,
     nothing,
     one_of,
+    sampled_from,
     text,
 )
-from prompt_toolkit.completion import CompleteEvent, Completion
+from prompt_toolkit.completion import CompleteEvent, Completer, Completion
+from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text import FormattedText
 
-from action_completer import types
+from action_completer import types, utils
 from action_completer.completer import ActionCompleter
-from action_completer.utils import noop
+from action_completer.validator import ActionValidator
 
 from .strategies import (
     action,
@@ -35,7 +38,9 @@ from .strategies import (
     action_completer,
     action_group,
     action_param,
+    builtin_types,
     fragment,
+    generic_completer,
     lazy_string,
     lazy_text,
 )
@@ -100,7 +105,7 @@ def test_get_completion_style_returns_override_when_provided(
     action_completer(just({})),
     one_of(
         action_completable(style=none()),
-        action_completable(style=just(noop)),
+        action_completable(style=just(utils.noop)),
     ),
     text(alphabet=printable, min_size=1),
 )
@@ -142,7 +147,7 @@ def test_get_completion_selected_style_returns_override_when_provided(
     action_completer(just({})),
     one_of(
         action_completable(selected_style=none()),
-        action_completable(selected_style=just(noop)),
+        action_completable(selected_style=just(utils.noop)),
     ),
     text(alphabet=printable, min_size=1),
 )
@@ -346,3 +351,515 @@ def test_iter_group_completions_skips_inactive_sources(
         )
         == 0
     )
+
+
+@given(
+    action_completer(just({})),
+    action(),
+    action_param(source=text(alphabet=printable, min_size=1)),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_basic_param_completions(
+    completer: ActionCompleter,
+    action: types.Action,
+    action_param: types.ActionParam,
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+    completions = list(
+        completer._iter_basic_param_completions(
+            action,
+            action_param,
+            action_param.source,  # type: ignore
+            complete_event,
+            start_position=start_position,
+        )
+    )
+    assert len(completions) == 1
+
+    first_completion, *_ = completions
+    assert first_completion.text == action_param.source
+    assert first_completion.start_position == start_position
+
+
+@given(
+    action_completer(just({})),
+    action(),
+    action_param(source=just("test")),
+    just("invalid"),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_basic_param_completions_invalid_value(
+    completer: ActionCompleter,
+    action: types.Action,
+    action_param: types.ActionParam,
+    param_value: str,
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+    assert (
+        len(
+            list(
+                completer._iter_basic_param_completions(
+                    action,
+                    action_param,
+                    param_value,
+                    complete_event,
+                    start_position=start_position,
+                )
+            )
+        )
+        == 0
+    )
+
+
+@given(
+    action_completer(just({})),
+    action(),
+    action_param(source=lists(fragment(), min_size=1, unique=True)),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_iterable_param_completions(
+    completer: ActionCompleter,
+    action: types.Action,
+    action_param: types.ActionParam,
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+    completions = list(
+        completer._iter_iterable_param_completions(
+            action, action_param, "", complete_event, start_position=start_position
+        )
+    )
+    assert len(completions) == len(action_param.source)  # type: ignore
+
+    for completion, source in zip(completions, action_param.source):  # type: ignore
+        assert completion.text == source
+        assert completion.start_position == start_position
+
+
+@given(
+    action_completer(just({})),
+    action(),
+    action_param(source=just(["foo", "bar"])),
+    sampled_from(["fo", "foo"]),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_iterable_param_completions_partial_text(
+    completer: ActionCompleter,
+    action: types.Action,
+    action_param: types.ActionParam,
+    param_value: str,
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+    completions = list(
+        completer._iter_iterable_param_completions(
+            action,
+            action_param,
+            param_value,
+            complete_event,
+            start_position=start_position,
+        )
+    )
+    assert len(completions) == 1
+
+    first_completion, *_ = completions
+    assert first_completion.text == "foo"
+    assert first_completion.start_position == start_position
+
+
+@given(
+    action_completer(just({})),
+    action(),
+    action_param(source=generic_completer()),
+    builds(CompleteEvent),
+)
+def test_iter_completer_param_completions(
+    completer: ActionCompleter,
+    action: types.Action,
+    action_param: types.ActionParam,
+    complete_event: CompleteEvent,
+):
+
+    completions = list(
+        completer._iter_completer_param_completions(
+            action, action_param, "test", complete_event
+        )
+    )
+    assert len(completions) == 1
+
+    first_completion, *_ = completions
+    assert first_completion.text == "test"
+    assert (
+        isinstance(first_completion.start_position, int)
+        and first_completion.start_position <= 0
+    )
+
+
+@given(
+    action_completer(just({})),
+    action(),
+    action_param(source=just(lambda *_: ["foo", "bar"])),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_callable_param_completions(
+    completer: ActionCompleter,
+    action: types.Action,
+    action_param: types.ActionParam,
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+    completions = list(
+        completer._iter_callable_param_completions(
+            action, action_param, "fo", complete_event, start_position=start_position
+        )
+    )
+    assert len(completions) == 1
+
+    first_completion, *_ = completions
+    assert first_completion.text == "foo"
+    assert first_completion.start_position == start_position
+
+
+@given(
+    action_completer(just({})),
+    action(),
+    action_param(source=none()),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_none_param_completions(
+    completer: ActionCompleter,
+    action: types.Action,
+    action_param: types.ActionParam,
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+    assert (
+        len(
+            list(
+                completer._iter_none_param_completions(
+                    action,
+                    action_param,
+                    "test",
+                    complete_event,
+                    start_position=start_position,
+                )
+            )
+        )
+        == 0
+    )
+
+
+@given(
+    action_completer(just({})),
+    action(),
+    action_param(
+        source=none(),
+        display=lazy_text(allow_none=False),
+        display_meta=lazy_text(allow_none=False),
+    ),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_none_param_completions_yields_if_display_or_display_meta_provided(
+    completer: ActionCompleter,
+    action: types.Action,
+    action_param: types.ActionParam,
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+    completions = list(
+        completer._iter_none_param_completions(
+            action, action_param, "test", complete_event, start_position=start_position
+        )
+    )
+
+    assert len(completions) == 1
+
+    first_completion, *_ = completions
+    assert first_completion.text == "test"
+
+
+@given(
+    action_completer(just({})),
+    action(
+        params=lists(
+            action_param(
+                source=one_of(
+                    fragment(),
+                    lists(fragment(), min_size=1, unique=True),
+                    generic_completer(),
+                    just(lambda *_: ["test"]),
+                )
+            ),
+            min_size=1,
+        )
+    ),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_action_completions(
+    completer: ActionCompleter,
+    action: types.Action,
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+    completions = completer._iter_action_completions(
+        action, [""], complete_event, start_position=start_position
+    )
+    assert len(list(completions)) > 0
+    assert all(
+        completion.start_position == start_position for completion in completions
+    )
+
+
+@given(
+    action_completer(just({})),
+    action(
+        params=one_of(none(), just([]), lists(action_param(source=none()), max_size=1))
+    ),
+    lists(fragment(), min_size=1),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_action_completions_does_not_yield_if_no_completable_parameters_provided(
+    completer: ActionCompleter,
+    action: types.Action,
+    fragments: List[str],
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+    completions = completer._iter_action_completions(
+        action, fragments, complete_event, start_position=start_position
+    )
+    assert len(list(completions)) == 0
+
+
+@given(
+    action_completer(just({})),
+    action(params=lists(action_param(source=integers()), max_size=1)),
+    lists(fragment(), min_size=1),
+    builds(CompleteEvent),
+    integers(max_value=0),
+)
+def test_iter_action_completions_does_not_yield_if_no_source_completion_iterator(
+    completer: ActionCompleter,
+    action: types.Action,
+    fragments: List[str],
+    complete_event: CompleteEvent,
+    start_position: int,
+):
+
+    # XXX: this test is dependent that we don't ever attempt to complete for integers as
+    # a parameter source in the future
+    completions = completer._iter_action_completions(
+        action, fragments, complete_event, start_position=start_position
+    )
+    assert len(list(completions)) == 0
+
+
+@given(
+    action_completer(
+        action_group(
+            action_strategy=action_group(),
+            min_size=1,
+            max_size=1,
+            max_depth=0,
+        ),
+    ),
+    builds(CompleteEvent),
+)
+def test_get_completions_yields_for_ActionGroup_completable(
+    completer: ActionCompleter, complete_event: CompleteEvent
+):
+    completions = completer.get_completions(Document(), complete_event)
+    assert len(list(completions)) > 0
+
+
+@given(
+    action_completer(
+        action_group(
+            action_strategy=action(
+                params=lists(action_param(source=fragment()), min_size=1)
+            ),
+            min_size=1,
+            max_size=1,
+            max_depth=0,
+        ),
+    ),
+    builds(CompleteEvent),
+)
+def test_get_completions_yields_for_Action_completable(
+    completer: ActionCompleter, complete_event: CompleteEvent
+):
+    first_key = list(completer.root.children.keys())[0]
+    completions = completer.get_completions(
+        Document(text=f"{first_key!s} "), complete_event
+    )
+    assert len(list(completions)) > 0
+
+
+@given(action_completer(), builds(CompleteEvent))
+def test_get_completions_does_not_yield_if_no_fragments_extracted(
+    completer: ActionCompleter, complete_event: CompleteEvent
+):
+    with patch("action_completer.completer.get_fragments") as mocked_get_fragments:
+        mocked_get_fragments.return_value = []
+
+        completions = completer.get_completions(Document(), complete_event)
+        assert len(list(completions)) == 0
+
+
+@given(action_completer(), builds(CompleteEvent))
+def test_get_completions_does_not_yield_if_no_completable_completion_iterator(
+    completer: ActionCompleter, complete_event: CompleteEvent
+):
+    with patch("action_completer.completer.extract_context") as mocked_extract_context:
+        # fragments here must be a list of some string in order to skip the first early
+        # return from the get_completions generator
+        mocked_extract_context.return_value = (None, None, None, [""])
+
+        completions = completer.get_completions(Document(), complete_event)
+        assert len(list(completions)) == 0
+
+
+@given(action_completer())
+def test_get_validator(completer: ActionCompleter):
+    validator = completer.get_validator()
+    assert isinstance(validator, ActionValidator)
+    assert validator.root == completer.root
+
+
+@given(
+    action_completer(just({})),
+    action(params=lists(action_param(source=fragment()), min_size=1)),
+)
+def test_iter_partial_action_parameters(
+    completer: ActionCompleter, action: types.Action
+):
+    targets = [param.source for param in action.params]  # type: ignore
+    for source, target in zip(
+        completer._iter_partial_action_parameters(action, targets),  # type: ignore
+        targets,
+    ):
+        assert source == target
+
+
+@given(
+    action_completer(just({})),
+    action(
+        params=lists(
+            action_param(source=text(alphabet=digits, min_size=1), cast=just(int)),
+            min_size=1,
+        )
+    ),
+)
+def test_iter_partial_action_parameters_applies_cast_if_present(
+    completer: ActionCompleter, action: types.Action
+):
+    assert all(
+        isinstance(value, int)
+        for value in completer._iter_partial_action_parameters(
+            action, [param.source for param in action.params]  # type: ignore
+        )
+    )
+
+
+@given(
+    action_completer(just({})),
+    action(params=one_of(none(), just([]))),
+    lists(fragment(), min_size=1),
+)
+def test_iter_partial_action_parameters_does_not_yield_for_empty_params(
+    completer: ActionCompleter, action: types.Action, fragments: List[str]
+):
+    action_parameters = completer._iter_partial_action_parameters(action, fragments)
+    assert len(list(action_parameters)) == 0
+
+
+@given(action_completer(just({})), action(), just([]))
+def test_iter_partial_action_parameters_does_not_yield_for_empty_fragments(
+    completer: ActionCompleter, action: types.Action, fragments: List[str]
+):
+    action_parameters = completer._iter_partial_action_parameters(action, fragments)
+    assert len(list(action_parameters)) == 0
+
+
+@given(
+    action_completer(just({})),
+    action(
+        params=lists(action_param(source=fragment()), min_size=1, max_size=1),
+        capture_all=just(True),
+    ),
+    lists(fragment(), min_size=1),
+)
+def test_iter_partial_action_parameters_captures_trailing_fragments_if_capture_all(
+    completer: ActionCompleter, action: types.Action, fragments: List[str]
+):
+    action_parameters = completer._iter_partial_action_parameters(action, fragments)
+    assert list(action_parameters) == fragments
+
+
+@given(
+    action_completer(just({})),
+    action(
+        action=just(utils.noop),
+        params=lists(action_param(source=fragment()), min_size=1),
+    ),
+)
+def test_get_partial_action(completer: ActionCompleter, action: types.Action):
+    with patch("action_completer.completer.extract_context") as mocked_extract_context:
+        targets = [param.source for param in action.params]  # type: ignore
+        mocked_extract_context.return_value = (None, None, action, targets)
+
+        partial_action = completer.get_partial_action("")
+        assert partial_action.func == utils.noop  # type: ignore
+        assert partial_action.args == tuple(targets)  # type: ignore
+
+
+@given(
+    action_completer(just({})),
+    one_of(action_group(), builtin_types()),
+    lists(fragment(), min_size=1),
+)
+def test_get_partial_action_raises_ValueError_if_extracted_completable_is_not_Action(
+    completer: ActionCompleter, group: types.ActionGroup, fragments: List[str]
+):
+    with patch("action_completer.completer.extract_context") as mocked_extract_context:
+        mocked_extract_context.return_value = (None, None, group, fragments)
+
+        with pytest.raises(ValueError):
+            completer.get_partial_action("")
+
+
+@given(action_completer(just({})), action(action=none()), lists(fragment(), min_size=1))
+def test_get_partial_action_defaults_to_noop_if_Action_missing_callable(
+    completer: ActionCompleter, action: types.Action, fragments: List[str]
+):
+    with patch("action_completer.completer.extract_context") as mocked_extract_context:
+        mocked_extract_context.return_value = (None, None, action, fragments)
+
+        partial_action = completer.get_partial_action("")
+        assert partial_action.func == utils.noop  # type: ignore
+
+
+@given(
+    action_completer(just({})),
+    lists(builtin_types()),
+    dictionaries(text(alphabet=printable), builtin_types()),
+)
+def test_run_action(
+    completer: ActionCompleter, args: List[Any], kwargs: Dict[str, Any]
+):
+    with patch.object(completer, "get_partial_action") as mocked_get_partial_action:
+        mocked_get_partial_action.return_value = MagicMock()
+
+        completer.run_action("", *args, **kwargs)
+        mocked_get_partial_action.return_value.assert_called_with(*args, **kwargs)
