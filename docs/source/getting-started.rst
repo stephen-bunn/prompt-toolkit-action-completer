@@ -298,6 +298,8 @@ directory and verifies that the file can safely be created:
 .. literalinclude:: _static/assets/examples/005-advanced-touch-validation.py
    :emphasize-lines: 13-17,30
 
+.. image:: _static/assets/recordings/005-advanced-touch-validation.gif
+
 
 By default, the :class:`~.validator.ActionValidator` will validate that you are
 providing the **exact** amount of parameters for an action.
@@ -308,6 +310,8 @@ that the user gives at least the number of defined parameters.
 
 .. literalinclude:: _static/assets/examples/006-capture-all-action.py
    :emphasize-lines: 8,10,12
+
+.. image:: _static/assets/recordings/006-capture-all-action.gif
 
 
 Nested Groups
@@ -324,6 +328,9 @@ newly created :class:`~.types.ActionGroup` instance.
 
 .. literalinclude:: _static/assets/examples/005-nested-action-group.py
    :emphasize-lines: 11,14,19
+
+.. image:: _static/assets/recordings/005-nested-action-group.gif
+
 
 .. important::
    Note that the :func:`~.types.param` decorator is only available from the
@@ -369,6 +376,8 @@ instance and will result in the completion results being styled all the same way
 .. literalinclude:: _static/assets/examples/007-color-completions.py
    :emphasize-lines: 11-12
 
+.. image:: _static/assets/recordings/007-color-completions.gif
+
 
 Both ``style`` and ``selected_style`` can be lazily evaluated if necessary.
 Simply pass a callable with a signature similar to the following:
@@ -386,6 +395,8 @@ leave everyone else with a red background:
 
 .. literalinclude:: _static/assets/examples/008-dynamic-color-completions.py
    :emphasize-lines: 8-14,20
+
+.. image:: _static/assets/recordings/008-dynamic-color-completions.gif
 
 
 .. warning::
@@ -416,11 +427,16 @@ string to the ``display`` keyword argument:
    :emphasize-lines: 8
 
 
+.. image:: _static/assets/recordings/009-display-completions.gif
+
+
 We can also pass an instance of :class:`~prompt_toolkit.formatted_text.FormattedText` to
 ``display`` to get some pretty fancy completions:
 
 .. literalinclude:: _static/assets/examples/010-display-formattedtext-completions.py
    :emphasize-lines: 1,9
+
+.. image:: _static/assets/recordings/010-display-formattedtext-completions.gif
 
 
 Similar to the ``style`` and ``selected_style`` properties, we can define the
@@ -450,6 +466,8 @@ through the ``display_meta`` keyword argument.
 .. literalinclude:: _static/assets/examples/011-display-meta-completions.py
    :emphasize-lines: 8
 
+.. image:: _static/assets/recordings/011-display-meta-completions.gif
+
 
 Everything that you can do with ``display``, you can also do with ``display_meta``.
 For more details about what kind of formats you can display, you should read through the
@@ -472,6 +490,8 @@ run once the user has first called ``activate``:
 .. literalinclude:: _static/assets/examples/012-conditional-actions.py
    :emphasize-lines: 22,27,32
 
+.. image:: _static/assets/recordings/012-conditional-actions.gif
+
 
 Custom Action Execution
 -----------------------
@@ -484,3 +504,16 @@ the prompt to get an callable for the desired action with the casted parameters 
 
 .. literalinclude:: _static/assets/examples/013-custom-action-execution.py
    :emphasize-lines: 10,12,16,18-19
+
+.. image:: _static/assets/recordings/013-custom-action-execution.gif
+
+----
+
+| **There you have it.**
+
+That is a basic overview of the features currently available in the
+:class:`~.completer.ActionCompleter`.
+To understand more about what is available to help to construct basic autocompletion for
+prompt interfaces, I would recommend you read through the
+`prompt-toolkit documentation <https://python-prompt-toolkit.readthedocs.io/>`_ and
+continue on reading through the :ref:`action_completer` internal reference docs.
