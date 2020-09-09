@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "prompt-toolkit-action-completer"
-version = "0.1.0"
+version = "1.0.0"
 description = "A fairly simple method for registering callables as prompt-toolkit completions"
 authors = ["Stephen Bunn <stephen@bunn.io>"]
 maintainers = []
@@ -25,13 +25,14 @@ keywords = [
   "action"
 ]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Operating System :: POSIX",
   "Operating System :: MacOS :: MacOS X",
   "Operating System :: Microsoft :: Windows",
   "Natural Language :: English",
-  "Topic :: Software Development :: Libraries :: Python Modules"
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "License :: OSI Approved :: ISC License (ISCL)"
 ]
 include = [
   "pyproject.toml",
