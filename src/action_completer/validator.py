@@ -437,7 +437,7 @@ class ActionValidator(Validator):
         self,
         action: Action,
         fragments: List[str],
-        parent_name: Optional[str] = None,
+        parent_name: str,
         cursor_position: int = 0,
     ):
         """Validate the prompt buffer fragments are valid against the given action.
@@ -455,8 +455,7 @@ class ActionValidator(Validator):
         Args:
             action (Action): The action to base validation off of
             fragments (List[str]): The current prompt buffer fragments
-            parent_name (Optional[str], optional): The name of the task that triggered
-                the gieven action. Defaults to None.
+            parent_name (str): The name of the task that triggered the given action.
             cursor_position (int, optional): The current cursor position of the prompt
                 buffer. Defaults to 0.
 
@@ -471,7 +470,7 @@ class ActionValidator(Validator):
             parent_name and len(parent_name) > 0
         ), f"parent name for action {action!r} was not given"
 
-        if action.params is None:
+        if action.params is None or len(action.params) <= 0:
             return
 
         for param_index, (action_param, param_value) in enumerate(
@@ -524,32 +523,38 @@ class ActionValidator(Validator):
                 document fails.
         """
 
-        parent, parent_name, relative, fragments = extract_context(
+        parent, parent_name, completable, fragments = extract_context(
             self.root, get_fragments(document.text)
         )
 
-        if isinstance(relative, ActionGroup):
+        if isinstance(completable, ActionGroup):
             self._validate_group(
-                relative,
+                completable,
                 fragments,
-                parent_name=parent_name,
+                parent_name,
                 cursor_position=document.cursor_position,
             )
-        elif isinstance(relative, Action):
+        elif isinstance(completable, Action):
             # Validate against the current action's parent group's if an action is
             # extracted from the current document
-            if relative.active is not None and not relative.active() and parent:
+            if completable.active is not None and not completable.active() and parent:
                 self._validate_group(
                     parent,
                     fragments,
-                    parent_name=parent_name,
+                    parent_name,
                     cursor_position=document.cursor_position,
                 )
                 return
 
+            # If we don't have the action's parent name at this point, we can't really
+            # safely perform validation. This should never occur, but I'm never 100%
+            # confident about it
+            if not parent_name:
+                return
+
             self._validate_action(
-                relative,
+                completable,
                 fragments,
-                parent_name=parent_name,
+                parent_name,
                 cursor_position=document.cursor_position,
             )

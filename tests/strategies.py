@@ -32,6 +32,7 @@ from prompt_toolkit.completion import CompleteEvent, Completer, Completion
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition, Filter
 from prompt_toolkit.formatted_text import ANSI, HTML, FormattedText, to_formatted_text
+from prompt_toolkit.validation import ValidationError
 
 from action_completer import ActionCompleter, ActionValidator, types
 
@@ -331,3 +332,32 @@ def generic_completer(
                 )
 
     return draw(just(DummyCompleter()))
+
+
+@composite
+def custom_validator_callable(
+    draw,
+    fail_validation: bool = False,
+    message_strategy: Optional[SearchStrategy[str]] = None,
+    cursor_position_strategy: Optional[SearchStrategy[int]] = None,
+) -> SearchStrategy[Callable[[types.ActionParam, str, List[str]], None]]:
+    """Composite strategy to build a custom validator callable."""
+
+    def custom_validator(
+        param: types.ActionParam, param_value: str, previous_fragments: List[str]
+    ):
+        if fail_validation:
+            raise ValidationError(
+                message=draw(
+                    message_strategy
+                    if message_strategy
+                    else text(alphabet=printable, min_size=1)
+                ),
+                cursor_position=draw(
+                    cursor_position_strategy
+                    if cursor_position_strategy
+                    else integers(min_value=0)
+                ),
+            )
+
+    return draw(just(custom_validator))
