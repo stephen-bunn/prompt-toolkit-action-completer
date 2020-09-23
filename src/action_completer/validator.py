@@ -54,6 +54,7 @@ from typing import Iterable, List, Optional, Tuple, Union
 
 import attr
 from fuzzywuzzy import process as fuzzy_process
+from fuzzywuzzy import utils as fuzzy_utils
 from prompt_toolkit.completion import Completer
 from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError, Validator
@@ -81,7 +82,9 @@ class ActionValidator(Validator):
 
     root: ActionGroup = attr.ib()
 
-    def _get_best_choice(self, choices: Iterable[str], text: str) -> Optional[str]:
+    def _get_best_choice(
+        self, choices: Union[List[str], Tuple[str]], text: str
+    ) -> Optional[str]:
         """Guess the best choice from an iterable of choice strings given a target.
 
         Args:
@@ -91,6 +94,12 @@ class ActionValidator(Validator):
         Returns:
             Optional[str]: The best choice if available, otherwise None
         """
+
+        # if we can't rely on fuzzy matching to appropriately process the user-given
+        # we just default to suggesting the first available choice since it's not really
+        # our concern to do our own string matching
+        if len(fuzzy_utils.full_process(text)) <= 0:
+            return choices[0] if len(choices) > 0 else None
 
         extracted = fuzzy_process.extractOne(text, choices)
         return extracted[0] if extracted and len(extracted) > 0 else None

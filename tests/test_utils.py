@@ -5,10 +5,11 @@
 """Contains tests related to the functionality provided in the utilities."""
 
 import re
-from string import printable
+from string import ascii_letters, digits, printable, punctuation
 from typing import List, Optional, Type, Union
 from unittest.mock import patch
 
+import pytest
 from fuzzywuzzy import process as fuzzy_process
 from hypothesis import assume, given
 from hypothesis.strategies import just, lists, none, one_of, text
@@ -88,6 +89,20 @@ def test_iter_best_choices():
         assert list(
             iter_best_choices(["none test", "tolerance test", "test"], "test", 100)
         ) == ["test"]
+
+
+@given(
+    lists(text(alphabet=ascii_letters + digits, min_size=1), min_size=1, unique=True),
+    text(alphabet=punctuation.replace("_", ""), min_size=1),
+)
+def test_iter_best_choices_does_not_raise_warnings_with_punctuation(
+    choices: List[str], user_value: str
+):
+    # NOTE: fuzzywuzzy doesn't consider _ (underscore) to be punctuation
+    with pytest.warns(None) as warning_record:
+        assert list(iter_best_choices(choices, user_value)) == choices
+
+    assert len(warning_record) == 0
 
 
 @given(

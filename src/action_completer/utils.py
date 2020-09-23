@@ -8,6 +8,7 @@ import re
 from typing import Any, Generator, Iterable, List, Optional, Tuple, Union
 
 from fuzzywuzzy import process as fuzzy_process
+from fuzzywuzzy import utils as fuzzy_utils
 from prompt_toolkit.formatted_text import FormattedText
 
 from .types import (
@@ -187,6 +188,12 @@ def iter_best_choices(
 
     # if no value is given, yield all choices
     if not user_value or len(user_value) <= 0:
+        yield from choices
+        return
+
+    # if value is reduced to nothing in fuzzy matching, yield all choices
+    # NOTE: full_process doesn't consider _ (underscore) to be punctuation
+    if len(fuzzy_utils.full_process(user_value)) <= 0:
         yield from choices
         return
 
