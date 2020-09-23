@@ -27,21 +27,6 @@ from .strategies import (
 )
 
 
-@given(action_validator(just({})), lists(fragment(), min_size=1))
-def test_get_best_choice(validator: ActionValidator, choices: List[str]):
-    assert validator._get_best_choice(choices, choices[0]) == choices[0]
-
-
-@given(action_validator(just({})), lists(fragment(), min_size=1), fragment())
-def test_get_best_choice_returns_None_if_no_best_choice(
-    validator: ActionValidator, choices: List[str], text: str
-):
-    with patch("action_completer.validator.fuzzy_process") as mocked_fuzzy_process:
-        mocked_fuzzy_process.extractOne.return_value = []
-
-        assert validator._get_best_choice(choices, text) is None
-
-
 @given(
     action_validator(just({})),
     one_of(
@@ -104,7 +89,7 @@ def test_validate_choices_raises_ValidationError_without_closest_choice(
     validator: ActionValidator, choices: List[str], text: str, cursor_position: int
 ):
     assume(text not in choices)
-    with patch.object(validator, "_get_best_choice") as mocked_get_best_choice:
+    with patch("action_completer.validator.get_best_choice") as mocked_get_best_choice:
         mocked_get_best_choice.return_value = None
 
         with pytest.raises(ValidationError) as exc_info:

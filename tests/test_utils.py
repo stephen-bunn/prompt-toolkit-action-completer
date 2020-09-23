@@ -20,6 +20,7 @@ from action_completer.utils import (
     decode_completion,
     encode_completion,
     extract_context,
+    get_best_choice,
     get_dynamic_value,
     get_fragments,
     iter_best_choices,
@@ -59,6 +60,29 @@ def test_get_fragments(fragments: List[str]):
     extracted_fragments = get_fragments(" ".join(fragments))
     assert isinstance(extracted_fragments, list)
     assert len(extracted_fragments) == len(fragments)
+
+
+@given(lists(fragment(), min_size=2, unique=True))
+def test_get_best_choice(choices: List[str]):
+    assert get_best_choice(choices, choices[0]) == choices[0]
+
+
+@given(just([]), fragment())
+def test_get_best_choices_returns_None_if_no_choices(choices: List[str], text: str):
+    assert get_best_choice(choices, text) is None
+
+
+@given(lists(fragment(), min_size=1, max_size=1), fragment())
+def test_get_best_choices_returns_only_available_choice(choices: List[str], text: str):
+    assert get_best_choice(choices, choices[0]) == choices[0]
+
+
+@given(lists(fragment(alphabet=ascii_letters + digits), min_size=2, unique=True))
+def test_get_best_choice_returns_None_if_no_best_choice(choices: List[str]):
+    with patch("action_completer.utils.fuzzy_process") as mocked_fuzzy_process:
+        mocked_fuzzy_process.extractOne.return_value = []
+
+        assert get_best_choice(choices, choices[0]) is None
 
 
 @given(text())

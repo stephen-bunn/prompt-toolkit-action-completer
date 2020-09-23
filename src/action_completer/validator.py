@@ -60,7 +60,7 @@ from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError, Validator
 
 from .types import Action, ActionGroup, ActionParam
-from .utils import decode_completion, extract_context, get_fragments
+from .utils import decode_completion, extract_context, get_best_choice, get_fragments
 
 
 @attr.s
@@ -81,28 +81,6 @@ class ActionValidator(Validator):
     """
 
     root: ActionGroup = attr.ib()
-
-    def _get_best_choice(
-        self, choices: Union[List[str], Tuple[str]], text: str
-    ) -> Optional[str]:
-        """Guess the best choice from an iterable of choice strings given a target.
-
-        Args:
-            choices (Iterable[str]): The iterable of choices to guess from
-            text (str): The target text to base the best guess off of
-
-        Returns:
-            Optional[str]: The best choice if available, otherwise None
-        """
-
-        # if we can't rely on fuzzy matching to appropriately process the user-given
-        # we just default to suggesting the first available choice since it's not really
-        # our concern to do our own string matching
-        if len(fuzzy_utils.full_process(text)) <= 0:
-            return choices[0] if len(choices) > 0 else None
-
-        extracted = fuzzy_process.extractOne(text, choices)
-        return extracted[0] if extracted and len(extracted) > 0 else None
 
     def _validate_choices(
         self, choices: Union[List[str], Tuple[str]], text: str, cursor_position: int = 0
@@ -133,7 +111,7 @@ class ActionValidator(Validator):
 
         if text not in choices:
             message = f"Invalid value {text!r}"
-            best_guess = self._get_best_choice(choices, text)
+            best_guess = get_best_choice(choices, text)
             if best_guess:
                 message += f", did you mean {best_guess!r}"
 

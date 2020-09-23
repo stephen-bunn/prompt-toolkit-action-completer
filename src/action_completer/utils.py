@@ -152,6 +152,38 @@ def get_dynamic_value(
     )
 
 
+def get_best_choice(choices: Iterable[str], user_value: str) -> Optional[str]:
+    """Guess the best choice from an interable of choice strings given a target value.
+
+    This method has a few caveats to make using it with completion a bit easier:
+
+    - If no choices are given, nothing is returned.
+    - If only 1 choice is given, that choice is always returned.
+    - If the given value (taget) text is not alphanumerical, the first available choice
+      is returned.
+
+    Args:
+        choices (Iterable[str]): The iterable of choices to guess from
+        user_value (str): The target value to base the best guess off of
+
+    Returns:
+        Optional[str]: The best choice if available, otherwise None
+    """
+
+    choices = list(choices)
+    if len(choices) <= 0:
+        return None
+
+    if len(choices) == 1:
+        return choices[0]
+
+    if len(fuzzy_utils.full_process(user_value)) <= 0:
+        return choices[0]
+
+    extracted = fuzzy_process.extractOne(user_value, choices)
+    return extracted[0] if extracted and len(extracted) > 0 else None
+
+
 def iter_best_choices(
     choices: Iterable[str], user_value: str, fuzzy_tolerance: Optional[int] = None
 ) -> Generator[str, None, None]:
@@ -166,6 +198,7 @@ def iter_best_choices(
         just a single choice.
 
     - If the given value (target) text is empty, all choices will be yielded.
+    - If the given value (target) text is not alphanumerical, all choices are yielded.
 
     Args:
         choices (Iterable[str]): An interable of strings to apply fuzzy matching to

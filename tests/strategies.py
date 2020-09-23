@@ -38,12 +38,14 @@ from action_completer import ActionCompleter, ActionValidator, types
 
 
 @composite
-def fragment(draw, min_size: int = 1, max_size: int = 15) -> SearchStrategy[str]:
+def fragment(
+    draw, alphabet: Optional[str] = None, min_size: int = 1, max_size: int = 15
+) -> SearchStrategy[str]:
     """Composite strategy for building a fragment-safe string."""
 
     return draw(
         text(
-            alphabet=(ascii_letters + digits + punctuation),
+            alphabet=alphabet if alphabet else (ascii_letters + digits + punctuation),
             min_size=min_size,
             max_size=max_size,
         )
