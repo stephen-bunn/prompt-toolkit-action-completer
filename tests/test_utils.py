@@ -6,13 +6,13 @@
 
 import re
 from string import ascii_letters, digits, printable, punctuation
-from typing import List, Optional, Type, Union
+from typing import Any, List, Optional, Type, Union
 from unittest.mock import patch
 
 import pytest
 from fuzzywuzzy import process as fuzzy_process
 from hypothesis import assume, given
-from hypothesis.strategies import just, lists, none, one_of, text
+from hypothesis.strategies import just, lists, none, one_of, sampled_from, text
 from prompt_toolkit.formatted_text import FormattedText
 
 from action_completer import types
@@ -20,6 +20,7 @@ from action_completer.utils import (
     decode_completion,
     encode_completion,
     extract_context,
+    format_dynamic_value,
     get_best_choice,
     get_dynamic_value,
     get_fragments,
@@ -152,6 +153,50 @@ def test_get_dynamic_value_LazyText(
     # prompt toolkit's FormattedText does some kind of magic when translating between
     # ANSI and HTML within to_formatted_text that breaks __hash__ on FormattedText?
     assert isinstance(get_dynamic_value(source, lazy, text), (str, FormattedText))
+
+
+@given(just("{completion}"), text(alphabet=printable))
+def test_format_dynamic_value(template: str, text: str):
+    assert format_dynamic_value(template, text) == text
+
+
+@given(sampled_from(["{", "}", "{}", "{c", "{completer"]), text(alphabet=printable))
+def test_format_dynamic_value_allows_partial_formats(template: str, text):
+    assert format_dynamic_value(template, text) == template
+
+
+@given(
+    one_of(action_param(), action(), action_group()),
+    just("{completion}"),
+    text(alphabet=printable),
+)
+def test_get_dynamic_value_LazyText_formats_completion_text_str(
+    source: types.ActionCompletable_T, lazy: types.LazyText_T, text: str
+):
+    assert get_dynamic_value(source, lazy, text) == text
+
+
+@given(
+    one_of(action_param(), action(), action_group()),
+    just(FormattedText([("", "{completion}")])),
+    text(alphabet=printable),
+)
+def test_get_dynamic_value_LazyText_formats_completion_text_FormattedText(
+    source: types.ActionCompletable_T, lazy: types.LazyText_T, text: str
+):
+    assert get_dynamic_value(source, lazy, text) == FormattedText([("", text)])
+
+
+@given(
+    one_of(action_param(), action(), action_group()),
+    builtin_types(exclude=[str]),
+    text(alphabet=printable),
+    builtin_types(),
+)
+def test_get_dynamic_value_LazyText_returns_default(
+    source: types.ActionCompletable_T, lazy: Any, text: str, default: Any
+):
+    assert get_dynamic_value(source, lazy, text, default=default) is default
 
 
 @given(

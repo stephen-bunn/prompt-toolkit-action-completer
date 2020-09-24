@@ -5,11 +5,11 @@
 """Contains utility functions used throughout various points of the module."""
 
 import re
-from typing import Any, Generator, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 from fuzzywuzzy import process as fuzzy_process
 from fuzzywuzzy import utils as fuzzy_utils
-from prompt_toolkit.formatted_text import FormattedText
+from prompt_toolkit.formatted_text import FormattedText, to_formatted_text
 
 from .types import (
     Action,
@@ -120,6 +120,29 @@ def extract_context(action_group: ActionGroup, fragments: List[str]) -> ActionCo
     return current_parent, current_name, current_completable, fragments[depth:]
 
 
+def format_dynamic_value(template: str, text: str) -> str:
+    """Format the given template text for the dynamic value.
+
+    Args:
+        template (str): The template text to be formatted
+        text (str): The current text fragment that triggered the completion
+
+    Returns:
+        str: The formatted text
+    """
+
+    formats: Dict[str, str] = {"completion": text}
+
+    result = template
+    for format_key, format_value in formats.items():
+        try:
+            result = result.format(**{format_key: format_value})
+        except (ValueError, IndexError):
+            pass
+
+    return result
+
+
 def get_dynamic_value(
     source: ActionCompletable_T,
     value: LazyText_T,
@@ -127,6 +150,18 @@ def get_dynamic_value(
     default: Optional[Union[str, FormattedText]] = None,
 ) -> Optional[Union[str, FormattedText]]:
     """Resolve a lazy/dynamic completion format value.
+
+    The given value will be formatted in place of any ``{completion}`` usage
+    within the dynamic text. The following example will display the description
+    containing the completion value in place of the given value
+
+    .. code-block:: python
+
+        @completer.action("hello-world")
+        @completer.param(["1", "2", "3"], display_meta="Will display {completion}")
+        def _hello_world(number_value: str):
+            print(f"Hello, {number_value!s}!")
+
 
     Args:
         source (:data:`~action_completer.types.ActionCompletable_T`):
@@ -145,11 +180,23 @@ def get_dynamic_value(
             default
     """
 
-    return (
-        value
-        if isinstance(value, (str, FormattedText))
-        else (value(source, text) if callable(value) else default)
-    )
+    if isinstance(value, str):
+        return format_dynamic_value(value, text)
+    elif isinstance(value, FormattedText):
+        return FormattedText(
+            [
+                (  # type: ignore
+                    tuple_style,
+                    format_dynamic_value(tuple_text, text),
+                    *tuple_args,
+                )
+                for (tuple_style, tuple_text, *tuple_args) in value
+            ]
+        )
+    elif callable(value):
+        return value(source, text)
+
+    return default
 
 
 def get_best_choice(choices: Iterable[str], user_value: str) -> Optional[str]:

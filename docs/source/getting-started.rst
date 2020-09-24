@@ -456,6 +456,25 @@ The callable for the ``display`` should have a signature similar to the followin
       ...
 
 
+You can also easily include the completion value within a string or
+:class:`~prompt_toolkit.formatted_text.FormattedText` instance without having to do
+anything fancy by supplying a ``{completion}`` format in the ``display`` or
+``display_meta`` values.
+For example:
+
+.. code-block:: python
+
+   @completer.action("hello-world")
+   @completer.param(["1", "2", "3"], display="Value {completion}")
+   def hello_world(number_value: str):
+      print(f"Hello, {number_value!s}")
+
+
+This will produce completions using the display ``Value 1``, ``Value 2``, and
+``Value 3``.
+Somewhat useful if you don't want to go through the effort of defining a callable to
+just place completion values in your completion's display or descriptions.
+
 
 Description
 :::::::::::
