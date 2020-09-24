@@ -462,16 +462,14 @@ anything fancy by supplying a ``{completion}`` format in the ``display`` or
 ``display_meta`` values.
 For example:
 
-.. code-block:: python
+.. literalinclude:: _static/assets/examples/014-display-completion-interpolation.py
+   :emphasize-lines: 9
 
-   @completer.action("hello-world")
-   @completer.param(["1", "2", "3"], display="Value {completion}")
-   def hello_world(number_value: str):
-      print(f"Hello, {number_value!s}")
+This will produce completions where the completed value is inserted into the template
+provided for the ``display_meta``.
 
+.. image:: _static/assets/recordings/014-display-completion-interpolation.gif
 
-This will produce completions using the display ``Value 1``, ``Value 2``, and
-``Value 3``.
 Somewhat useful if you don't want to go through the effort of defining a callable to
 just place completion values in your completion's display or descriptions.
 
