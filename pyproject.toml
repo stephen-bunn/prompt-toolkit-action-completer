@@ -59,6 +59,7 @@ python = "^3.7"
 prompt-toolkit = "^3.0.7"
 attrs = "^20.1.0"
 fuzzywuzzy = {extras = ["speedup"], version = "^0.18.0"}
+typing-extensions = "^3.7.4"
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"
