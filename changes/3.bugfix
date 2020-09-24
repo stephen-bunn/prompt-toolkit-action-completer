@@ -1,1 +1,0 @@
-Ensuring that prompt text does not reduce to nothing before attempting to fuzzy match against explicit completions and validation.

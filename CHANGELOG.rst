@@ -8,6 +8,25 @@ Changelog
 
 .. towncrier release notes start
 
+`1.1.0 <https://github.com/stephen-bunn/prompt-toolkit-action-completer/releases/tag/v1.1.0>`_ (*2020-09-24*)
+=============================================================================================================
+
+Features
+--------
+
+- Adding support for formatting ``{completion}`` in LazyText_T values for completions. `#4 <https://github.com/stephen-bunn/prompt-toolkit-action-completer/issues/4>`_
+
+Bug Fixes
+---------
+
+- Ensuring that prompt text does not reduce to nothing before attempting to fuzzy match against explicit completions and validation. `#3 <https://github.com/stephen-bunn/prompt-toolkit-action-completer/issues/3>`_
+
+Miscellaneous
+-------------
+
+- Moving ``ActionValidator._get_best_choice`` logic into ``utils.get_best_choice``.
+
+
 `1.0.0 <https://github.com/stephen-bunn/prompt-toolkit-action-completer/releases/tag/v1.0.0>`_ (*2020-09-09*)
 =============================================================================================================
 

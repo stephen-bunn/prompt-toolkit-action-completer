@@ -1,1 +1,0 @@
-Moving ``ActionValidator._get_best_choice`` logic into ``utils.get_best_choice``.
