@@ -8,6 +8,15 @@ Changelog
 
 .. towncrier release notes start
 
+`1.1.1 <https://github.com/stephen-bunn/prompt-toolkit-action-completer/releases/tag/v1.1.1>`_ (*2020-09-24*)
+=============================================================================================================
+
+Bug Fixes
+---------
+
+- Declaring dependency on ``typing-extensions`` in ``pyproject.toml``. `#5 <https://github.com/stephen-bunn/prompt-toolkit-action-completer/issues/5>`_
+
+
 `1.1.0 <https://github.com/stephen-bunn/prompt-toolkit-action-completer/releases/tag/v1.1.0>`_ (*2020-09-24*)
 =============================================================================================================
 
